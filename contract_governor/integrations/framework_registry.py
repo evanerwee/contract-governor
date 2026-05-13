@@ -16,6 +16,7 @@ from ..interfaces.serving_concerns import CatalogProvider, ContractProvider, Hea
 
 class FrameworkType(Enum):
     """Enumeration of supported web framework types."""
+
     FASTAPI = "fastapi"
     FLASK = "flask"
     DJANGO = "django"
@@ -39,7 +40,7 @@ class FrameworkAdapter(ABC):
         contract_provider: ContractProvider,
         health_provider: HealthProvider,
         documentation_renderer: Optional[DocumentationRenderer] = None,
-        **kwargs
+        **kwargs,
     ) -> CatalogServer:
         """
         Create a catalog server instance for this framework.
@@ -63,7 +64,7 @@ class FrameworkAdapter(ABC):
         contract_provider: ContractProvider,
         health_provider: HealthProvider,
         documentation_renderer: Optional[DocumentationRenderer] = None,
-        **kwargs
+        **kwargs,
     ) -> Any:
         """
         Create a complete application instance for this framework.
@@ -113,7 +114,7 @@ class FastAPIAdapter(FrameworkAdapter):
         contract_provider: ContractProvider,
         health_provider: HealthProvider,
         documentation_renderer: Optional[DocumentationRenderer] = None,
-        **kwargs
+        **kwargs,
     ) -> CatalogServer:
         """Create FastAPI catalog server."""
         from .fastapi_server import FastAPICatalogServer
@@ -124,10 +125,10 @@ class FastAPIAdapter(FrameworkAdapter):
         except ImportError:
             raise ImportError("FastAPI is required for FastAPIAdapter. Install with: pip install fastapi")
 
-        app = kwargs.get('app') or FastAPI(
-            title=kwargs.get('title', 'API Contract Catalog'),
-            description=kwargs.get('description', 'Centralized catalog of governed API contracts'),
-            version=kwargs.get('version', '1.0.0')
+        app = kwargs.get("app") or FastAPI(
+            title=kwargs.get("title", "API Contract Catalog"),
+            description=kwargs.get("description", "Centralized catalog of governed API contracts"),
+            version=kwargs.get("version", "1.0.0"),
         )
 
         return FastAPICatalogServer(
@@ -135,7 +136,7 @@ class FastAPIAdapter(FrameworkAdapter):
             catalog_provider=catalog_provider,
             contract_provider=contract_provider,
             health_provider=health_provider,
-            documentation_renderer=documentation_renderer
+            documentation_renderer=documentation_renderer,
         )
 
     def create_application(
@@ -144,7 +145,7 @@ class FastAPIAdapter(FrameworkAdapter):
         contract_provider: ContractProvider,
         health_provider: HealthProvider,
         documentation_renderer: Optional[DocumentationRenderer] = None,
-        **kwargs
+        **kwargs,
     ) -> Any:
         """Create complete FastAPI application."""
         from .fastapi_server import FastAPIAppFactory
@@ -154,9 +155,9 @@ class FastAPIAdapter(FrameworkAdapter):
             contract_provider=contract_provider,
             health_provider=health_provider,
             documentation_renderer=documentation_renderer,
-            title=kwargs.get('title', 'API Contract Catalog'),
-            description=kwargs.get('description', 'Centralized catalog of governed API contracts'),
-            version=kwargs.get('version', '1.0.0')
+            title=kwargs.get("title", "API Contract Catalog"),
+            description=kwargs.get("description", "Centralized catalog of governed API contracts"),
+            version=kwargs.get("version", "1.0.0"),
         )
 
     def get_framework_type(self) -> FrameworkType:
@@ -172,10 +173,10 @@ class FastAPIAdapter(FrameworkAdapter):
         errors = []
 
         # Validate optional configuration
-        if 'title' in config and not isinstance(config['title'], str):
+        if "title" in config and not isinstance(config["title"], str):
             errors.append("FastAPI 'title' must be a string")
 
-        if 'version' in config and not isinstance(config['version'], str):
+        if "version" in config and not isinstance(config["version"], str):
             errors.append("FastAPI 'version' must be a string")
 
         return errors
@@ -190,7 +191,7 @@ class FlaskAdapter(FrameworkAdapter):
         contract_provider: ContractProvider,
         health_provider: HealthProvider,
         documentation_renderer: Optional[DocumentationRenderer] = None,
-        **kwargs
+        **kwargs,
     ) -> CatalogServer:
         """Create Flask catalog server."""
         from .flask_server import FlaskCatalogServer
@@ -200,14 +201,14 @@ class FlaskAdapter(FrameworkAdapter):
         except ImportError:
             raise ImportError("Flask is required for FlaskAdapter. Install with: pip install flask")
 
-        app = kwargs.get('app') or Flask(kwargs.get('app_name', 'catalog_app'))
+        app = kwargs.get("app") or Flask(kwargs.get("app_name", "catalog_app"))
 
         return FlaskCatalogServer(
             app=app,
             catalog_provider=catalog_provider,
             contract_provider=contract_provider,
             health_provider=health_provider,
-            documentation_renderer=documentation_renderer
+            documentation_renderer=documentation_renderer,
         )
 
     def create_application(
@@ -216,7 +217,7 @@ class FlaskAdapter(FrameworkAdapter):
         contract_provider: ContractProvider,
         health_provider: HealthProvider,
         documentation_renderer: Optional[DocumentationRenderer] = None,
-        **kwargs
+        **kwargs,
     ) -> Any:
         """Create complete Flask application."""
         from .flask_server import FlaskAppFactory
@@ -226,7 +227,7 @@ class FlaskAdapter(FrameworkAdapter):
             contract_provider=contract_provider,
             health_provider=health_provider,
             documentation_renderer=documentation_renderer,
-            app_name=kwargs.get('app_name', 'catalog_app')
+            app_name=kwargs.get("app_name", "catalog_app"),
         )
 
     def get_framework_type(self) -> FrameworkType:
@@ -241,7 +242,7 @@ class FlaskAdapter(FrameworkAdapter):
         """Validate Flask configuration."""
         errors = []
 
-        if 'app_name' in config and not isinstance(config['app_name'], str):
+        if "app_name" in config and not isinstance(config["app_name"], str):
             errors.append("Flask 'app_name' must be a string")
 
         return errors
@@ -256,7 +257,7 @@ class DjangoAdapter(FrameworkAdapter):
         contract_provider: ContractProvider,
         health_provider: HealthProvider,
         documentation_renderer: Optional[DocumentationRenderer] = None,
-        **kwargs
+        **kwargs,
     ) -> CatalogServer:
         """Create Django catalog server."""
         from .django_server import DjangoCatalogServer
@@ -270,7 +271,7 @@ class DjangoAdapter(FrameworkAdapter):
             catalog_provider=catalog_provider,
             contract_provider=contract_provider,
             health_provider=health_provider,
-            documentation_renderer=documentation_renderer
+            documentation_renderer=documentation_renderer,
         )
 
     def create_application(
@@ -279,7 +280,7 @@ class DjangoAdapter(FrameworkAdapter):
         contract_provider: ContractProvider,
         health_provider: HealthProvider,
         documentation_renderer: Optional[DocumentationRenderer] = None,
-        **kwargs
+        **kwargs,
     ) -> Any:
         """Create Django URL patterns."""
         from .django_server import DjangoAppFactory
@@ -288,7 +289,7 @@ class DjangoAdapter(FrameworkAdapter):
             catalog_provider=catalog_provider,
             contract_provider=contract_provider,
             health_provider=health_provider,
-            documentation_renderer=documentation_renderer
+            documentation_renderer=documentation_renderer,
         )
 
     def get_framework_type(self) -> FrameworkType:
@@ -396,7 +397,7 @@ class FrameworkRegistry:
         contract_provider: ContractProvider,
         health_provider: HealthProvider,
         documentation_renderer: Optional[DocumentationRenderer] = None,
-        **kwargs
+        **kwargs,
     ) -> CatalogServer:
         """
         Create a catalog server for the specified framework.
@@ -418,7 +419,7 @@ class FrameworkRegistry:
             contract_provider=contract_provider,
             health_provider=health_provider,
             documentation_renderer=documentation_renderer,
-            **kwargs
+            **kwargs,
         )
 
     def create_application(
@@ -428,7 +429,7 @@ class FrameworkRegistry:
         contract_provider: ContractProvider,
         health_provider: HealthProvider,
         documentation_renderer: Optional[DocumentationRenderer] = None,
-        **kwargs
+        **kwargs,
     ) -> Any:
         """
         Create a complete application for the specified framework.
@@ -450,7 +451,7 @@ class FrameworkRegistry:
             contract_provider=contract_provider,
             health_provider=health_provider,
             documentation_renderer=documentation_renderer,
-            **kwargs
+            **kwargs,
         )
 
     def validate_framework_config(self, framework_type: FrameworkType, config: Dict[str, Any]) -> List[str]:
@@ -510,7 +511,7 @@ class CatalogServerFactory:
         health_provider: HealthProvider,
         documentation_renderer: Optional[DocumentationRenderer] = None,
         framework: Optional[FrameworkType] = None,
-        **kwargs
+        **kwargs,
     ) -> CatalogServer:
         """
         Create a catalog server with automatic framework detection.
@@ -535,7 +536,7 @@ class CatalogServerFactory:
             contract_provider=contract_provider,
             health_provider=health_provider,
             documentation_renderer=documentation_renderer,
-            **kwargs
+            **kwargs,
         )
 
     @staticmethod
@@ -545,7 +546,7 @@ class CatalogServerFactory:
         health_provider: HealthProvider,
         documentation_renderer: Optional[DocumentationRenderer] = None,
         framework: Optional[FrameworkType] = None,
-        **kwargs
+        **kwargs,
     ) -> Any:
         """
         Create a complete application with automatic framework detection.
@@ -570,7 +571,7 @@ class CatalogServerFactory:
             contract_provider=contract_provider,
             health_provider=health_provider,
             documentation_renderer=documentation_renderer,
-            **kwargs
+            **kwargs,
         )
 
     @staticmethod
@@ -584,6 +585,7 @@ class CatalogServerFactory:
         # Check for FastAPI first (preferred)
         try:
             import fastapi
+
             return FrameworkType.FASTAPI
         except ImportError:
             pass
@@ -591,6 +593,7 @@ class CatalogServerFactory:
         # Check for Flask
         try:
             import flask
+
             return FrameworkType.FLASK
         except ImportError:
             pass
@@ -598,6 +601,7 @@ class CatalogServerFactory:
         # Check for Django
         try:
             import django
+
             return FrameworkType.DJANGO
         except ImportError:
             pass

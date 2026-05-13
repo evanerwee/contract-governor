@@ -34,18 +34,15 @@ class UrlTemplateResolver:
         resolved = []
 
         for server in server_urls:
-            url_template = server.get('url_template', '')
-            description = server.get('description', '')
-            name = server.get('name', '')
+            url_template = server.get("url_template", "")
+            description = server.get("description", "")
+            name = server.get("name", "")
 
             # Resolve template variables
             resolved_url = UrlTemplateResolver._resolve_template(url_template)
 
             # Build resolved server entry
-            resolved_server = {
-                'url': resolved_url,
-                'description': description or f"{name} endpoint"
-            }
+            resolved_server = {"url": resolved_url, "description": description or f"{name} endpoint"}
 
             resolved.append(resolved_server)
 
@@ -62,12 +59,13 @@ class UrlTemplateResolver:
         Returns:
             Resolved string with environment variable values
         """
+
         def replace_var(match):
             """Substitute a matched ${VARIABLE} placeholder with its environment variable value."""
             var_name = match.group(1)
-            value = os.getenv(var_name, '')
+            value = os.getenv(var_name, "")
             if not value:
                 raise ValueError(f"Environment variable ${{{var_name}}} not set")
             return value
 
-        return re.sub(r'\$\{([A-Z_][A-Z0-9_]*)\}', replace_var, template)
+        return re.sub(r"\$\{([A-Z_][A-Z0-9_]*)\}", replace_var, template)

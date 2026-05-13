@@ -15,11 +15,11 @@ author = "Evan Erwee"
 release = __version__
 
 extensions = [
-    "sphinx.ext.autodoc",       # Auto-generate from docstrings
-    "sphinx.ext.napoleon",      # Google/NumPy-style docstring support
-    "sphinx.ext.viewcode",      # Add [source] links to generated docs
-    "sphinx.ext.intersphinx",   # Cross-reference external docs (boto3, pydantic)
-    "myst_parser",              # Parse .md files alongside .rst
+    "sphinx.ext.autodoc",  # Auto-generate from docstrings
+    "sphinx.ext.napoleon",  # Google/NumPy-style docstring support
+    "sphinx.ext.viewcode",  # Add [source] links to generated docs
+    "sphinx.ext.intersphinx",  # Cross-reference external docs (boto3, pydantic)
+    "myst_parser",  # Parse .md files alongside .rst
 ]
 
 # Napoleon settings (Google-style docstrings)
@@ -36,8 +36,18 @@ autodoc_default_options = {
     "member-order": "bysource",
 }
 autodoc_mock_imports = [
-    "fastapi", "uvicorn", "httpx", "pydantic", "boto3", "botocore",
-    "semver", "openapi_core", "django", "flask", "werkzeug", "starlette",
+    "fastapi",
+    "uvicorn",
+    "httpx",
+    "pydantic",
+    "boto3",
+    "botocore",
+    "semver",
+    "openapi_core",
+    "django",
+    "flask",
+    "werkzeug",
+    "starlette",
 ]
 
 # LaTeX settings

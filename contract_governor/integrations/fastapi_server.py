@@ -18,10 +18,7 @@ try:
     from fastapi import FastAPI, HTTPException, Query, Request
     from fastapi.responses import HTMLResponse, JSONResponse
 except ImportError:
-    raise ImportError(
-        "FastAPI is required for this module. "
-        "Install with: pip install contract-governor[server]"
-    )
+    raise ImportError("FastAPI is required for this module. " "Install with: pip install contract-governor[server]")
 
 from ..core.contract_governor import ContractGovernor
 from ..core.errors import (
@@ -105,15 +102,9 @@ class FastAPICatalogServer(CatalogServer):
         @self.app.get(path, response_class=JSONResponse)
         async def get_api_catalog(
             request: Request,
-            api_major: Optional[str] = Query(
-                None, description="Filter by API major version"
-            ),
-            category: Optional[str] = Query(
-                None, description="Filter by contract category"
-            ),
-            visible_only: bool = Query(
-                True, description="Show only visible contracts"
-            ),
+            api_major: Optional[str] = Query(None, description="Filter by API major version"),
+            category: Optional[str] = Query(None, description="Filter by contract category"),
+            visible_only: bool = Query(True, description="Show only visible contracts"),
         ) -> Dict[str, Any]:
             """Get API catalog with optional filtering."""
             audit_logger = get_global_audit_logger()
@@ -129,13 +120,9 @@ class FastAPICatalogServer(CatalogServer):
                 contracts = self.catalog_provider.get_catalog_contracts(filters)
 
                 if visible_only:
-                    contracts = self.catalog_provider.filter_visible_contracts(
-                        contracts
-                    )
+                    contracts = self.catalog_provider.filter_visible_contracts(contracts)
 
-                contract_summaries = [
-                    self._contract_to_summary(c) for c in contracts
-                ]
+                contract_summaries = [self._contract_to_summary(c) for c in contracts]
 
                 response: Dict[str, Any] = {
                     "contracts": contract_summaries,
@@ -211,23 +198,15 @@ class FastAPICatalogServer(CatalogServer):
                 """Render HTML documentation for the catalog."""
                 try:
                     contracts = self.catalog_provider.get_catalog_contracts()
-                    visible_contracts = (
-                        self.catalog_provider.filter_visible_contracts(
-                            contracts
-                        )
-                    )
-                    summaries = [
-                        self._contract_to_summary(c) for c in visible_contracts
-                    ]
+                    visible_contracts = self.catalog_provider.filter_visible_contracts(contracts)
+                    summaries = [self._contract_to_summary(c) for c in visible_contracts]
                     renderer = self.documentation_renderer
                     if renderer is None:
                         raise HTTPException(
                             status_code=500,
                             detail="Documentation renderer not configured",
                         )
-                    html = renderer.render_catalog_page(
-                        summaries
-                    )
+                    html = renderer.render_catalog_page(summaries)
                     return HTMLResponse(content=html)
                 except Exception as exc:
                     # Presentation-only: simple 500 is fine here
@@ -252,9 +231,7 @@ class FastAPICatalogServer(CatalogServer):
         # OpenAPI spec                                                       #
         # ------------------------------------------------------------------ #
         if handler is not None:
-            self.app.get(f"{path}/openapi.json", response_class=JSONResponse)(
-                handler
-            )
+            self.app.get(f"{path}/openapi.json", response_class=JSONResponse)(handler)
         else:
 
             @self.app.get(f"{path}/openapi.json", response_class=JSONResponse)
@@ -267,9 +244,7 @@ class FastAPICatalogServer(CatalogServer):
                 audit_logger = get_global_audit_logger()
 
                 try:
-                    if not self.contract_provider.is_contract_available(
-                        category, api_major
-                    ):
+                    if not self.contract_provider.is_contract_available(category, api_major):
                         context = create_error_context(
                             service_name="fastapi_catalog_server",
                             contract_category=category,
@@ -283,9 +258,7 @@ class FastAPICatalogServer(CatalogServer):
                             context=context,
                         )
 
-                    spec = self.contract_provider.get_contract_spec(
-                        category, api_major
-                    )
+                    spec = self.contract_provider.get_contract_spec(category, api_major)
                     if not spec:
                         context = create_error_context(
                             service_name="fastapi_catalog_server",
@@ -364,9 +337,7 @@ class FastAPICatalogServer(CatalogServer):
         async def get_contract_metadata(category: str, api_major: str) -> Any:
             """Get metadata for a specific contract."""
             try:
-                metadata = self.contract_provider.get_contract_metadata(
-                    category, api_major
-                )
+                metadata = self.contract_provider.get_contract_metadata(category, api_major)
                 if not metadata:
                     raise HTTPException(
                         status_code=404,
@@ -393,20 +364,17 @@ class FastAPICatalogServer(CatalogServer):
             ) -> HTMLResponse:
                 """Get documentation page for a specific contract."""
                 try:
-                    if not self.contract_provider.is_contract_available(
-                        category, api_major
-                    ):
+                    if not self.contract_provider.is_contract_available(category, api_major):
                         raise HTTPException(
                             status_code=404,
                             detail=f"Contract not found: {category}:{api_major}",
                         )
 
                     from html import escape as html_escape
+
                     safe_category = html_escape(category)
                     safe_api_major = html_escape(api_major)
-                    contract_url = (
-                        f"/contracts/{safe_category}/{safe_api_major}/openapi.json"
-                    )
+                    contract_url = f"/contracts/{safe_category}/{safe_api_major}/openapi.json"
                     title = f"{safe_category} {safe_api_major} API Documentation"
                     renderer = self.documentation_renderer
                     if renderer is None:
@@ -414,9 +382,7 @@ class FastAPICatalogServer(CatalogServer):
                             status_code=500,
                             detail="Documentation renderer not configured",
                         )
-                    html = renderer.render_contract_page(
-                        contract_url, title
-                    )
+                    html = renderer.render_contract_page(contract_url, title)
                     return HTMLResponse(content=html)
                 except HTTPException:
                     raise
@@ -491,33 +457,23 @@ class FastAPICatalogServer(CatalogServer):
         client = getattr(request, "client", None)
         return getattr(client, "host", None) if client else None
 
-    def get_exposed_contracts(
-        self, filters: Optional[Dict[str, Any]] = None
-    ) -> List[ExposedContractRecord]:
+    def get_exposed_contracts(self, filters: Optional[Dict[str, Any]] = None) -> List[ExposedContractRecord]:
         """Convenience wrapper used by non-HTTP tiers (e.g., testing)."""
         return self.catalog_provider.get_catalog_contracts(filters)
 
-    def _contract_to_summary(
-        self, contract: ExposedContractRecord
-    ) -> Dict[str, Any]:
+    def _contract_to_summary(self, contract: ExposedContractRecord) -> Dict[str, Any]:
         """Convert an ExposedContractRecord into a thin DTO for the API."""
         return {
             "category": contract.category,
             "api_major_version": contract.api_major_version,
             "contract_version": contract.contract_version,
-            "title": contract.exposed_openapi_spec.get("info", {}).get(
-                "title", "Unknown API"
-            ),
-            "description": contract.exposed_openapi_spec.get("info", {}).get(
-                "description", ""
-            ),
+            "title": contract.exposed_openapi_spec.get("info", {}).get("title", "Unknown API"),
+            "description": contract.exposed_openapi_spec.get("info", {}).get("description", ""),
             "openapi_url": contract.openapi_mount_path,
             "docs_url": f"/contracts/{contract.category}/{contract.api_major_version}/docs",
             "proxy_prefix": contract.proxy_prefix,
             "source_service": contract.source_service,
-            "exposed_at": (
-                contract.exposed_at.isoformat() if contract.exposed_at else None
-            ),
+            "exposed_at": (contract.exposed_at.isoformat() if contract.exposed_at else None),
             "stipulation_applied": contract.stipulation_applied,
         }
 
@@ -557,7 +513,7 @@ class FastAPIAppFactory:
             title=title,
             description=description,
             version=version,
-            docs_url="/internal/docs",   # Internal FastAPI docs
+            docs_url="/internal/docs",  # Internal FastAPI docs
             redoc_url="/internal/redoc",  # Internal ReDoc
         )
 
@@ -680,27 +636,29 @@ class ContractGovernorBootstrapper:
                 if stipulation_id and ":" in stipulation_id:
                     # Get the actual stipulation config to extract version
                     stip_config = governor.stipulations.get(stipulation_id)
-                    if stip_config and hasattr(stip_config, 'stipulation_version'):
+                    if stip_config and hasattr(stip_config, "stipulation_version"):
                         stipulation_version = stip_config.stipulation_version
 
-                contracts_list.append({
-                    "category": contract.category,
-                    "version": contract.api_major_version,  # e.g., "v1"
-                    "contract_version": contract.contract_version,  # e.g., "1.0.0" from OpenAPI info.version
-                    "openapi_version": openapi_version,  # e.g., "3.0.3"
-                    "stipulation_version": stipulation_version,  # e.g., "1.0.0"
-                    "title": title,  # CRITICAL: This is what api.explorer needs
-                    "description": description,
-                    "title_i18n": title_i18n,  # NEW: i18n translations
-                    "description_i18n": description_i18n,  # NEW: i18n translations
-                    "openapi_url": f"/contracts/{contract.category}/{contract.api_major_version}/openapi.json",
-                    "docs_url": f"/contracts/{contract.category}/{contract.api_major_version}/docs"
-                })
+                contracts_list.append(
+                    {
+                        "category": contract.category,
+                        "version": contract.api_major_version,  # e.g., "v1"
+                        "contract_version": contract.contract_version,  # e.g., "1.0.0" from OpenAPI info.version
+                        "openapi_version": openapi_version,  # e.g., "3.0.3"
+                        "stipulation_version": stipulation_version,  # e.g., "1.0.0"
+                        "title": title,  # CRITICAL: This is what api.explorer needs
+                        "description": description,
+                        "title_i18n": title_i18n,  # NEW: i18n translations
+                        "description_i18n": description_i18n,  # NEW: i18n translations
+                        "openapi_url": f"/contracts/{contract.category}/{contract.api_major_version}/openapi.json",
+                        "docs_url": f"/contracts/{contract.category}/{contract.api_major_version}/docs",
+                    }
+                )
 
             return {
                 "contracts": contracts_list,
                 "total": len(contracts_list),
-                "generated_at": datetime.now(timezone.utc).isoformat()
+                "generated_at": datetime.now(timezone.utc).isoformat(),
             }
 
         # 3) Load contracts
@@ -713,6 +671,7 @@ class ContractGovernorBootstrapper:
 
         # 3.5) Get deployment role for filtering
         import os
+
         deployment_role = os.getenv("DEPLOYMENT_ROLE", "")
         if deployment_role:
             logger.info("📋 Step 3.5: Deployment role filtering active")
@@ -769,25 +728,35 @@ class ContractGovernorBootstrapper:
                     logger.warning(
                         "   ⚠️ Skipped %s %s — no stipulation file found. "
                         "Create stipulations/%s_%s.yaml or remove the contract from S3.",
-                        category, api_major, category, api_major,
+                        category,
+                        api_major,
+                        category,
+                        api_major,
                     )
                 elif isinstance(root_cause, StipulationParseError):
                     logger.error(
                         "   ❌ Skipped %s %s — stipulation parse error: %s",
-                        category, api_major, root_cause,
+                        category,
+                        api_major,
+                        root_cause,
                     )
                 else:
                     # Unexpected error — full traceback is useful here
                     logger.error("   ❌ Failed to expose %s %s: %s", category, api_major, str(e))
                     import traceback
+
                     logger.error("   Full traceback: %s", traceback.format_exc())
 
                 skipped_contracts.append(f"{category}:{api_major}")
                 continue
 
         if skipped_contracts:
-            logger.info("   📋 Skipped %d contracts for role '%s': %s",
-                       len(skipped_contracts), deployment_role, skipped_contracts)
+            logger.info(
+                "   📋 Skipped %d contracts for role '%s': %s",
+                len(skipped_contracts),
+                deployment_role,
+                skipped_contracts,
+            )
 
         # 5) Generate FastAPI router
         logger.info("📋 Step 5: Generating FastAPI router from OpenAPI contracts")
@@ -795,28 +764,28 @@ class ContractGovernorBootstrapper:
         governed_router = extension.generate_fastapi_router()
 
         # LOG ALL ROUTES BEING REGISTERED
-        logger.info("="*80)
+        logger.info("=" * 80)
         logger.info("🔍 ROUTE REGISTRATION EVIDENCE:")
         logger.info(f"   Total routes in router: {len(governed_router.routes)}")
         for i, route in enumerate(governed_router.routes, 1):
-            if hasattr(route, 'path') and hasattr(route, 'methods'):
-                methods = ','.join(route.methods) if route.methods else 'N/A'
+            if hasattr(route, "path") and hasattr(route, "methods"):
+                methods = ",".join(route.methods) if route.methods else "N/A"
                 logger.info(f"   {i}. {methods:6s} {mount_prefix}{route.path}")
-        logger.info("="*80)
+        logger.info("=" * 80)
 
         # 6) Mount router on app
         logger.info("📋 Step 6: Mounting on FastAPI app at %s", mount_prefix)
         app.include_router(governed_router, prefix=mount_prefix)
 
         # LOG FINAL APP ROUTES
-        logger.info("="*80)
+        logger.info("=" * 80)
         logger.info("🔍 FINAL APP ROUTES AFTER MOUNTING:")
         logger.info(f"   Total routes in app: {len(app.routes)}")
         for i, route in enumerate(app.routes, 1):
-            if hasattr(route, 'path') and hasattr(route, 'methods'):
-                methods = ','.join(route.methods) if route.methods else 'N/A'
+            if hasattr(route, "path") and hasattr(route, "methods"):
+                methods = ",".join(route.methods) if route.methods else "N/A"
                 logger.info(f"   {i}. {methods:6s} {route.path}")
-        logger.info("="*80)
+        logger.info("=" * 80)
 
         logger.info("=" * 80)
         logger.info("✅ CONTRACT-DRIVEN ARCHITECTURE ACTIVE")
@@ -918,6 +887,7 @@ def mount_contract_governor(
             # Build server_urls from config
             if server_url_strategy == "env_based" and server_url_config:
                 import os
+
                 env_var = server_url_config.get("env_var", "PUBLIC_API_URL")
                 fallback = server_url_config.get("fallback", "")
                 base_url = os.getenv(env_var, fallback)
@@ -927,14 +897,14 @@ def mount_contract_governor(
 
                     for stip in stipulations.values():
                         # StipulationConfig is a dataclass, set attribute directly
-                        if hasattr(stip, 'server_urls'):
+                        if hasattr(stip, "server_urls"):
                             stip.server_urls = server_urls
 
                     logger.info(f"✅ Applied server URL {base_url} to {len(stipulations)} stipulations")
 
             return stipulations
 
-        setattr(contract_source, 'load_stipulations', load_stipulations_with_url_strategy)
+        setattr(contract_source, "load_stipulations", load_stipulations_with_url_strategy)
 
     contract_registry = InMemoryContractRegistry()
 
@@ -947,10 +917,13 @@ def mount_contract_governor(
     )
 
     # Safe: ContractGovernorBootstrapper.bootstrap always returns a ContractGovernor instance
-    return cast(ContractGovernor, bootstrapper.bootstrap(
-        app=app,
-        implementation_registry=implementation_registry,
-        mount_prefix=mount_prefix,
-        gateway_base_url=gateway_base_url,
-        api_catalog=api_catalog,
-    ))
+    return cast(
+        ContractGovernor,
+        bootstrapper.bootstrap(
+            app=app,
+            implementation_registry=implementation_registry,
+            mount_prefix=mount_prefix,
+            gateway_base_url=gateway_base_url,
+            api_catalog=api_catalog,
+        ),
+    )

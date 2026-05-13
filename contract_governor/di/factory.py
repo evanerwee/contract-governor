@@ -10,7 +10,7 @@ from typing import Any, Dict, Type, TypeVar, cast
 
 from .container import DIContainer
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class Factory(ABC):
@@ -63,15 +63,15 @@ class ConfigurableFactory(Factory):
             raise ValueError(f"Unknown object type: {object_type}")
 
         type_config = self.config[object_type]
-        class_path = type_config['class']
+        class_path = type_config["class"]
 
         # Import and resolve class
-        module_name, class_name = class_path.rsplit('.', 1)
+        module_name, class_name = class_path.rsplit(".", 1)
         module = __import__(module_name, fromlist=[class_name])
         cls = getattr(module, class_name)
 
         # Merge configuration parameters with kwargs
-        params = {**type_config.get('parameters', {}), **kwargs}
+        params = {**type_config.get("parameters", {}), **kwargs}
 
         # Create instance with dependency injection
         return self._create_with_injection(cls, params)
@@ -171,11 +171,11 @@ def create_factory_from_config(container: DIContainer, config_path: str) -> Conf
 
     config_file = Path(config_path)
 
-    if config_file.suffix.lower() == '.json':
-        with open(config_file, 'r') as f:
+    if config_file.suffix.lower() == ".json":
+        with open(config_file, "r") as f:
             config = json.load(f)
-    elif config_file.suffix.lower() in ['.yml', '.yaml']:
-        with open(config_file, 'r') as f:
+    elif config_file.suffix.lower() in [".yml", ".yaml"]:
+        with open(config_file, "r") as f:
             config = yaml.safe_load(f)
     else:
         raise ValueError(f"Unsupported configuration file format: {config_file.suffix}")

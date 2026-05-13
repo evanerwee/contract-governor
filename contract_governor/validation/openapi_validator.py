@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ValidationError:
     """Represents a validation error in an OpenAPI spec."""
+
     field: str
     message: str
     severity: str  # 'error' or 'warning'
@@ -25,6 +26,7 @@ class ValidationError:
 @dataclass
 class ValidationReport:
     """Comprehensive validation report for an OpenAPI spec."""
+
     is_valid: bool
     errors: List[ValidationError]
     warnings: List[ValidationError]
@@ -74,12 +76,10 @@ class OpenAPIValidator:
         """Check if openapi-core library is available."""
         try:
             import openapi_core
+
             return True
         except ImportError:
-            logger.warning(
-                "openapi-core library not available. "
-                "Install with: pip install openapi-core"
-            )
+            logger.warning("openapi-core library not available. " "Install with: pip install openapi-core")
             return False
 
     def validate(self, spec: Dict[str, Any], file_path: str = "unknown") -> ValidationReport:
@@ -97,8 +97,8 @@ class OpenAPIValidator:
         warnings = []
 
         # Extract basic info
-        spec_version = spec.get('openapi') or spec.get('swagger')
-        spec_title = spec.get('info', {}).get('title', 'Unknown')
+        spec_version = spec.get("openapi") or spec.get("swagger")
+        spec_title = spec.get("info", {}).get("title", "Unknown")
 
         # Basic structure validation (always performed)
         basic_errors, basic_warnings = self._validate_basic_structure(spec, file_path)
@@ -119,17 +119,11 @@ class OpenAPIValidator:
         is_valid = len(errors) == 0
 
         return ValidationReport(
-            is_valid=is_valid,
-            errors=errors,
-            warnings=warnings,
-            spec_version=spec_version,
-            spec_title=spec_title
+            is_valid=is_valid, errors=errors, warnings=warnings, spec_version=spec_version, spec_title=spec_title
         )
 
     def _validate_basic_structure(
-        self,
-        spec: Dict[str, Any],
-        file_path: str
+        self, spec: Dict[str, Any], file_path: str
     ) -> Tuple[List[ValidationError], List[ValidationError]]:
         """
         Perform basic structure validation.
@@ -140,137 +134,148 @@ class OpenAPIValidator:
         warnings: list[ValidationError] = []
 
         # Must have openapi or swagger field
-        if 'openapi' not in spec and 'swagger' not in spec:
-            errors.append(ValidationError(
-                field='openapi/swagger',
-                message='Missing required field: must have either "openapi" or "swagger"',
-                severity='error',
-                path=file_path
-            ))
+        if "openapi" not in spec and "swagger" not in spec:
+            errors.append(
+                ValidationError(
+                    field="openapi/swagger",
+                    message='Missing required field: must have either "openapi" or "swagger"',
+                    severity="error",
+                    path=file_path,
+                )
+            )
             return errors, warnings  # Can't continue without version
 
         # Must have info section
-        if 'info' not in spec:
-            errors.append(ValidationError(
-                field='info',
-                message='Missing required "info" section',
-                severity='error',
-                path=file_path
-            ))
+        if "info" not in spec:
+            errors.append(
+                ValidationError(
+                    field="info", message='Missing required "info" section', severity="error", path=file_path
+                )
+            )
         else:
             # Validate info section
-            info = spec['info']
-            if 'title' not in info:
-                errors.append(ValidationError(
-                    field='info.title',
-                    message='Missing required field "info.title"',
-                    severity='error',
-                    path=file_path
-                ))
-            if 'version' not in info:
-                errors.append(ValidationError(
-                    field='info.version',
-                    message='Missing required field "info.version"',
-                    severity='error',
-                    path=file_path
-                ))
+            info = spec["info"]
+            if "title" not in info:
+                errors.append(
+                    ValidationError(
+                        field="info.title",
+                        message='Missing required field "info.title"',
+                        severity="error",
+                        path=file_path,
+                    )
+                )
+            if "version" not in info:
+                errors.append(
+                    ValidationError(
+                        field="info.version",
+                        message='Missing required field "info.version"',
+                        severity="error",
+                        path=file_path,
+                    )
+                )
 
         # Must have paths section
-        if 'paths' not in spec:
-            errors.append(ValidationError(
-                field='paths',
-                message='Missing required "paths" section',
-                severity='error',
-                path=file_path
-            ))
+        if "paths" not in spec:
+            errors.append(
+                ValidationError(
+                    field="paths", message='Missing required "paths" section', severity="error", path=file_path
+                )
+            )
         else:
             # Validate paths section
-            paths = spec['paths']
+            paths = spec["paths"]
             if not isinstance(paths, dict):
-                errors.append(ValidationError(
-                    field='paths',
-                    message='"paths" must be a dictionary',
-                    severity='error',
-                    path=file_path
-                ))
+                errors.append(
+                    ValidationError(
+                        field="paths", message='"paths" must be a dictionary', severity="error", path=file_path
+                    )
+                )
             elif len(paths) == 0:
-                warnings.append(ValidationError(
-                    field='paths',
-                    message='"paths" section is empty - no endpoints defined',
-                    severity='warning',
-                    path=file_path
-                ))
+                warnings.append(
+                    ValidationError(
+                        field="paths",
+                        message='"paths" section is empty - no endpoints defined',
+                        severity="warning",
+                        path=file_path,
+                    )
+                )
             else:
                 # Validate each path
                 for path_name, path_item in paths.items():
-                    if not path_name.startswith('/'):
-                        errors.append(ValidationError(
-                            field=f'paths.{path_name}',
-                            message=f'Path must start with "/": {path_name}',
-                            severity='error',
-                            path=file_path
-                        ))
+                    if not path_name.startswith("/"):
+                        errors.append(
+                            ValidationError(
+                                field=f"paths.{path_name}",
+                                message=f'Path must start with "/": {path_name}',
+                                severity="error",
+                                path=file_path,
+                            )
+                        )
 
                     if not isinstance(path_item, dict):
-                        errors.append(ValidationError(
-                            field=f'paths.{path_name}',
-                            message='Path item must be a dictionary',
-                            severity='error',
-                            path=file_path
-                        ))
+                        errors.append(
+                            ValidationError(
+                                field=f"paths.{path_name}",
+                                message="Path item must be a dictionary",
+                                severity="error",
+                                path=file_path,
+                            )
+                        )
                         continue
 
                     # Check for at least one HTTP method
-                    http_methods = {'get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace'}
+                    http_methods = {"get", "post", "put", "patch", "delete", "options", "head", "trace"}
                     has_method = any(method in path_item for method in http_methods)
-                    if not has_method and '$ref' not in path_item:
-                        warnings.append(ValidationError(
-                            field=f'paths.{path_name}',
-                            message=f'Path has no HTTP methods defined: {path_name}',
-                            severity='warning',
-                            path=file_path
-                        ))
+                    if not has_method and "$ref" not in path_item:
+                        warnings.append(
+                            ValidationError(
+                                field=f"paths.{path_name}",
+                                message=f"Path has no HTTP methods defined: {path_name}",
+                                severity="warning",
+                                path=file_path,
+                            )
+                        )
 
         # Validate servers (if present)
-        if 'servers' in spec:
-            servers = spec['servers']
+        if "servers" in spec:
+            servers = spec["servers"]
             if not isinstance(servers, list):
-                errors.append(ValidationError(
-                    field='servers',
-                    message='"servers" must be an array',
-                    severity='error',
-                    path=file_path
-                ))
+                errors.append(
+                    ValidationError(
+                        field="servers", message='"servers" must be an array', severity="error", path=file_path
+                    )
+                )
             elif len(servers) == 0:
-                warnings.append(ValidationError(
-                    field='servers',
-                    message='"servers" array is empty',
-                    severity='warning',
-                    path=file_path
-                ))
+                warnings.append(
+                    ValidationError(
+                        field="servers", message='"servers" array is empty', severity="warning", path=file_path
+                    )
+                )
             else:
                 for idx, server in enumerate(servers):
                     if not isinstance(server, dict):
-                        errors.append(ValidationError(
-                            field=f'servers[{idx}]',
-                            message='Server must be a dictionary',
-                            severity='error',
-                            path=file_path
-                        ))
-                    elif 'url' not in server:
-                        errors.append(ValidationError(
-                            field=f'servers[{idx}]',
-                            message='Server must have a "url" field',
-                            severity='error',
-                            path=file_path
-                        ))
+                        errors.append(
+                            ValidationError(
+                                field=f"servers[{idx}]",
+                                message="Server must be a dictionary",
+                                severity="error",
+                                path=file_path,
+                            )
+                        )
+                    elif "url" not in server:
+                        errors.append(
+                            ValidationError(
+                                field=f"servers[{idx}]",
+                                message='Server must have a "url" field',
+                                severity="error",
+                                path=file_path,
+                            )
+                        )
 
         return errors, warnings
 
     def _validate_with_openapi_core(
-        self,
-        spec: Dict[str, Any],
-        file_path: str
+        self, spec: Dict[str, Any], file_path: str
     ) -> Tuple[List[ValidationError], List[ValidationError]]:
         """
         Perform deep validation using openapi-core library.
@@ -289,28 +294,28 @@ class OpenAPIValidator:
                 Spec.from_dict(spec)
                 logger.debug(f"✅ OpenAPI spec validated successfully: {file_path}")
             except OpenAPIError as e:
-                errors.append(ValidationError(
-                    field='spec',
-                    message=f'OpenAPI validation error: {str(e)}',
-                    severity='error',
-                    path=file_path
-                ))
+                errors.append(
+                    ValidationError(
+                        field="spec", message=f"OpenAPI validation error: {str(e)}", severity="error", path=file_path
+                    )
+                )
             except Exception as e:
-                errors.append(ValidationError(
-                    field='spec',
-                    message=f'Unexpected validation error: {str(e)}',
-                    severity='error',
-                    path=file_path
-                ))
+                errors.append(
+                    ValidationError(
+                        field="spec", message=f"Unexpected validation error: {str(e)}", severity="error", path=file_path
+                    )
+                )
 
         except ImportError:
             # This shouldn't happen since we checked earlier, but just in case
-            warnings.append(ValidationError(
-                field='validation',
-                message='openapi-core not available, skipping deep validation',
-                severity='warning',
-                path=file_path
-            ))
+            warnings.append(
+                ValidationError(
+                    field="validation",
+                    message="openapi-core not available, skipping deep validation",
+                    severity="warning",
+                    path=file_path,
+                )
+            )
 
         return errors, warnings
 

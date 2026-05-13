@@ -20,5 +20,5 @@ __all__ = [
     "AuditMetadataInjector",
     "SecurityEnforcer",
     "AuditHashGenerator",
-    "GovernanceMetadataBuilder"
+    "GovernanceMetadataBuilder",
 ]

@@ -21,7 +21,9 @@ class Transformer(ABC):
     """
 
     @abstractmethod
-    def transform(self, contract: Dict[str, Any], context: TransformContext, stipulation: StipulationConfig) -> Dict[str, Any]:
+    def transform(
+        self, contract: Dict[str, Any], context: TransformContext, stipulation: StipulationConfig
+    ) -> Dict[str, Any]:
         """
         Transform an OpenAPI contract according to stipulation requirements.
 

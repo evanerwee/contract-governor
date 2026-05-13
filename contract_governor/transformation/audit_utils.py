@@ -74,16 +74,13 @@ class AuditHashGenerator:
 
         # Remove extension fields if requested
         if exclude_extensions:
-            contract_copy = {
-                k: v for k, v in contract_copy.items()
-                if not k.startswith('x-')
-            }
+            contract_copy = {k: v for k, v in contract_copy.items() if not k.startswith("x-")}
 
         # Remove transformation metadata that changes with each transformation
-        contract_copy.pop('x-transformation-metadata', None)
+        contract_copy.pop("x-transformation-metadata", None)
 
         # Create deterministic JSON and hash it
-        contract_json = json.dumps(contract_copy, sort_keys=True, separators=(',', ':'))
+        contract_json = json.dumps(contract_copy, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(contract_json.encode()).hexdigest()
 
     @staticmethod
@@ -106,7 +103,7 @@ class AuditHashGenerator:
         contract: Dict[str, Any],
         stipulation: StipulationConfig,
         context: TransformContext,
-        transformation_result: str = "success"
+        transformation_result: str = "success",
     ) -> Dict[str, Any]:
         """
         Create a comprehensive audit trail entry for a contract transformation.
@@ -136,7 +133,7 @@ class AuditHashGenerator:
             "target_audience": context.target_audience,
             "scope_parameters": context.scope_parameters.copy(),
             "environment": context.environment,
-            "request_id": context.request_id
+            "request_id": context.request_id,
         }
 
 
@@ -180,7 +177,7 @@ class GovernanceMetadataBuilder:
             audit_note=self.stipulation.metadata_block.get("audit_note", "Contract governed by stipulations"),
             compliance_status="compliant",
             governance_version="1.0.0",
-            access_level=self.context.target_audience
+            access_level=self.context.target_audience,
         )
 
         # Add tenant scope if applicable
@@ -200,33 +197,39 @@ class GovernanceMetadataBuilder:
         audit_block = audit_metadata.to_dict()
 
         # Add additional governance information
-        audit_block.update({
-            "governance_framework": {
-                "name": "Contract Stipulations System",
-                "version": "1.0.0",
-                "specification": "https://github.com/contract-stipulations/spec"
-            },
-            "transformation_metadata": {
-                "transformation_id": f"{self.context.category}:{self.context.api_major_version}:{self.context.transformation_timestamp.isoformat()}",
-                "gateway_base_url": self.context.gateway_base_url,
-                "proxy_prefix_format": self.stipulation.proxy_prefix_format,
-                "exposure_policy": self.stipulation.exposure_policy.value if hasattr(self.stipulation.exposure_policy, 'value') else self.stipulation.exposure_policy,
-                "requires_scope_parameter": self.stipulation.requires_scope_parameter
-            },
-            "compliance_metadata": {
-                "validation_passed": True,
-                "forbidden_methods_stripped": self.stipulation.forbid_methods,
-                "required_fields_verified": self.stipulation.required_fields,
-                "openapi_version_requirement": self.stipulation.require_openapi_major,
-                "version_alignment_enforced": self.stipulation.enforce_version_alignment
-            },
-            "audit_integrity": {
-                "audit_metadata_hash": audit_metadata.get_audit_hash(),
-                "stipulation_hash": self.stipulation.get_stipulation_hash(),
-                "hash_algorithm": "SHA-256",
-                "hash_timestamp": datetime.now(timezone.utc).isoformat()
+        audit_block.update(
+            {
+                "governance_framework": {
+                    "name": "Contract Stipulations System",
+                    "version": "1.0.0",
+                    "specification": "https://github.com/contract-stipulations/spec",
+                },
+                "transformation_metadata": {
+                    "transformation_id": f"{self.context.category}:{self.context.api_major_version}:{self.context.transformation_timestamp.isoformat()}",
+                    "gateway_base_url": self.context.gateway_base_url,
+                    "proxy_prefix_format": self.stipulation.proxy_prefix_format,
+                    "exposure_policy": (
+                        self.stipulation.exposure_policy.value
+                        if hasattr(self.stipulation.exposure_policy, "value")
+                        else self.stipulation.exposure_policy
+                    ),
+                    "requires_scope_parameter": self.stipulation.requires_scope_parameter,
+                },
+                "compliance_metadata": {
+                    "validation_passed": True,
+                    "forbidden_methods_stripped": self.stipulation.forbid_methods,
+                    "required_fields_verified": self.stipulation.required_fields,
+                    "openapi_version_requirement": self.stipulation.require_openapi_major,
+                    "version_alignment_enforced": self.stipulation.enforce_version_alignment,
+                },
+                "audit_integrity": {
+                    "audit_metadata_hash": audit_metadata.get_audit_hash(),
+                    "stipulation_hash": self.stipulation.get_stipulation_hash(),
+                    "hash_algorithm": "SHA-256",
+                    "hash_timestamp": datetime.now(timezone.utc).isoformat(),
+                },
             }
-        })
+        )
 
         return audit_block
 
@@ -243,7 +246,11 @@ class GovernanceMetadataBuilder:
             "proxy_enforced": True,
             "governance_framework": "Contract Stipulations System v1.0.0",
             "audit_timestamp": self.context.transformation_timestamp.isoformat(),
-            "exposure_policy": self.stipulation.exposure_policy.value if hasattr(self.stipulation.exposure_policy, 'value') else self.stipulation.exposure_policy
+            "exposure_policy": (
+                self.stipulation.exposure_policy.value
+                if hasattr(self.stipulation.exposure_policy, "value")
+                else self.stipulation.exposure_policy
+            ),
         }
 
     def get_extension_namespace(self) -> str:

@@ -23,8 +23,14 @@ logger = logging.getLogger(__name__)
 class S3ContractSource(ContractSource):
     """Load OpenAPI contracts from S3 with control-plane version structure."""
 
-    def __init__(self, s3_client, bucket_name: str, control_plane_version: str,
-                 contracts_prefix: str = "contracts", stipulations_prefix: str = "stipulations"):
+    def __init__(
+        self,
+        s3_client,
+        bucket_name: str,
+        control_plane_version: str,
+        contracts_prefix: str = "contracts",
+        stipulations_prefix: str = "stipulations",
+    ):
         """Initialize S3 contract source with bucket, version, and prefix configuration."""
         self.s3_client_factory = s3_client
         self.bucket = bucket_name
@@ -40,9 +46,9 @@ class S3ContractSource(ContractSource):
 
     def _extract_major_version(self, version: str) -> str:
         """Extract major version from semver (v1.1.0 -> v1)."""
-        major = version.split('.')[0]
-        if not major.startswith('v'):
-            major = f'v{major}'
+        major = version.split(".")[0]
+        if not major.startswith("v"):
+            major = f"v{major}"
         return major
 
     def load_contracts(self) -> List[Dict[str, Any]]:
@@ -64,20 +70,20 @@ class S3ContractSource(ContractSource):
         skipped_files = 0
 
         s3 = self._get_s3_client()
-        paginator = s3.get_paginator('list_objects_v2')
+        paginator = s3.get_paginator("list_objects_v2")
         pages = paginator.paginate(Bucket=self.bucket, Prefix=prefix)
 
         logger.info(f"🔍 Loading contracts from s3://{self.bucket}/{prefix}")
 
         for page in pages:
-            if 'Contents' not in page:
+            if "Contents" not in page:
                 continue
 
-            for obj in page['Contents']:
-                key = obj['Key']
+            for obj in page["Contents"]:
+                key = obj["Key"]
 
                 # Only process YAML/JSON files
-                if not (key.endswith('.yaml') or key.endswith('.yml') or key.endswith('.json')):
+                if not (key.endswith(".yaml") or key.endswith(".yml") or key.endswith(".json")):
                     skipped_files += 1
                     continue
 
@@ -119,9 +125,9 @@ class S3ContractSource(ContractSource):
         """
         s3 = self._get_s3_client()
         response = s3.get_object(Bucket=self.bucket, Key=key)
-        content = response['Body'].read().decode('utf-8')
+        content = response["Body"].read().decode("utf-8")
 
-        if key.endswith('.json'):
+        if key.endswith(".json"):
             contract = json.loads(content)
         else:
             contract = yaml.safe_load(content)
@@ -132,7 +138,7 @@ class S3ContractSource(ContractSource):
             return None
 
         # Parse: v1/contracts/evidence-query/v1/openapi.yaml
-        parts = key.split('/')
+        parts = key.split("/")
         if len(parts) < 5:
             logger.warning(f"Invalid path structure: {key}")
             return None
@@ -142,27 +148,27 @@ class S3ContractSource(ContractSource):
         filename = parts[4]  # contract_file.yaml
 
         # Extract base filename without extension for unique source service
-        base_filename = filename.rsplit('.', 1)[0].replace('_api', '').replace('-api', '')
+        base_filename = filename.rsplit(".", 1)[0].replace("_api", "").replace("-api", "")
 
         # Normalize version to major version using semver
         try:
             # Remove 'v' prefix if present
-            clean_version = version_str.lstrip('v')
+            clean_version = version_str.lstrip("v")
             parsed = semver.VersionInfo.parse(clean_version)
             api_major = f"v{parsed.major}"
         except ValueError:
             # Fallback for non-semver versions
-            api_major = version_str.split('.')[0]
-            if not api_major.startswith('v'):
-                api_major = f'v{api_major}'
+            api_major = version_str.split(".")[0]
+            if not api_major.startswith("v"):
+                api_major = f"v{api_major}"
 
         return {
-            'contract': contract,
-            'category': category,
-            'api_major': api_major,
-            'source_service': f"{base_filename}-service",
-            'contract_file_path': f"s3://{self.bucket}/{key}",
-            'service_version': contract.get('info', {}).get('version', '1.0.0')
+            "contract": contract,
+            "category": category,
+            "api_major": api_major,
+            "source_service": f"{base_filename}-service",
+            "contract_file_path": f"s3://{self.bucket}/{key}",
+            "service_version": contract.get("info", {}).get("version", "1.0.0"),
         }
 
     def load_stipulations(self) -> Dict[str, StipulationConfig]:
@@ -178,22 +184,22 @@ class S3ContractSource(ContractSource):
         prefix = f"{self.control_plane_major}/{self.stipulations_prefix}/"
 
         s3 = self._get_s3_client()
-        paginator = s3.get_paginator('list_objects_v2')
+        paginator = s3.get_paginator("list_objects_v2")
         pages = paginator.paginate(Bucket=self.bucket, Prefix=prefix)
 
         for page in pages:
-            if 'Contents' not in page:
+            if "Contents" not in page:
                 continue
 
-            for obj in page['Contents']:
-                key = obj['Key']
+            for obj in page["Contents"]:
+                key = obj["Key"]
 
                 # Skip schema files and non-YAML/JSON files
-                filename = key.split('/')[-1]
-                if filename in ['schema.json', 'schema.yaml', 'schema.yml']:
+                filename = key.split("/")[-1]
+                if filename in ["schema.json", "schema.yaml", "schema.yml"]:
                     continue
 
-                if not (key.endswith('.yaml') or key.endswith('.yml') or key.endswith('.json')):
+                if not (key.endswith(".yaml") or key.endswith(".yml") or key.endswith(".json")):
                     continue
 
                 try:
@@ -215,16 +221,16 @@ class S3ContractSource(ContractSource):
         """
         s3 = self._get_s3_client()
         response = s3.get_object(Bucket=self.bucket, Key=key)
-        content = response['Body'].read().decode('utf-8')
+        content = response["Body"].read().decode("utf-8")
 
-        if key.endswith('.json'):
+        if key.endswith(".json"):
             data = json.loads(content)
         else:
             data = yaml.safe_load(content)
 
         # Parse filename: evidence-query_v1.yaml
-        filename = key.split('/')[-1].rsplit('.', 1)[0]
-        parts = filename.rsplit('_', 1)
+        filename = key.split("/")[-1].rsplit(".", 1)[0]
+        parts = filename.rsplit("_", 1)
         if len(parts) != 2:
             logger.warning(f"Invalid stipulation filename: {key}")
             return None

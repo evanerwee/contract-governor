@@ -17,20 +17,22 @@ from contract_governor.core.models import StipulationConfig
 
 class VariableSource(str, Enum):
     """Sources for template variables."""
-    DISCOVERY = "discovery"      # From data-plane discovery process
-    STATIC = "static"           # Static configuration
-    RUNTIME = "runtime"         # Runtime parameters (tenant_id, etc.)
+
+    DISCOVERY = "discovery"  # From data-plane discovery process
+    STATIC = "static"  # Static configuration
+    RUNTIME = "runtime"  # Runtime parameters (tenant_id, etc.)
 
 
 @dataclass
 class TemplateVariable:
     """Definition of a template variable."""
-    name: str                           # Variable name (e.g., "tenant_id")
-    source: VariableSource              # Where variable comes from
+
+    name: str  # Variable name (e.g., "tenant_id")
+    source: VariableSource  # Where variable comes from
     values: List[str] = field(default_factory=list)  # Possible values
-    default: Optional[str] = None       # Default value
-    required: bool = True               # Whether variable is required
-    pattern: Optional[str] = None       # Regex pattern for validation
+    default: Optional[str] = None  # Default value
+    required: bool = True  # Whether variable is required
+    pattern: Optional[str] = None  # Regex pattern for validation
 
     def __post_init__(self):
         """Validate variable definition."""
@@ -47,11 +49,12 @@ class TemplateVariable:
 @dataclass
 class ContractTemplate:
     """Template for generating multiple contract instances."""
-    template_id: str                    # Unique template identifier
-    base_contract: Dict[str, Any]       # Base OpenAPI contract
+
+    template_id: str  # Unique template identifier
+    base_contract: Dict[str, Any]  # Base OpenAPI contract
     variables: Dict[str, TemplateVariable] = field(default_factory=dict)
-    path_template: str = ""             # URL path template with variables
-    backend_template: str = ""          # Backend URL template
+    path_template: str = ""  # URL path template with variables
+    backend_template: str = ""  # Backend URL template
 
     def __post_init__(self):
         """Validate template configuration."""
@@ -66,15 +69,15 @@ class ContractTemplate:
 
         # Extract from path template
         if self.path_template:
-            variables.update(re.findall(r'\{(\w+)\}', self.path_template))
+            variables.update(re.findall(r"\{(\w+)\}", self.path_template))
 
         # Extract from backend template
         if self.backend_template:
-            variables.update(re.findall(r'\{(\w+)\}', self.backend_template))
+            variables.update(re.findall(r"\{(\w+)\}", self.backend_template))
 
         # Extract from contract paths
-        for path in self.base_contract.get('paths', {}).keys():
-            variables.update(re.findall(r'\{(\w+)\}', path))
+        for path in self.base_contract.get("paths", {}).keys():
+            variables.update(re.findall(r"\{(\w+)\}", path))
 
         return list(variables)
 
@@ -90,12 +93,13 @@ class ContractTemplate:
 @dataclass
 class ContractInstance:
     """Generated contract instance from template."""
-    instance_id: str                    # Unique instance identifier
-    template_id: str                    # Source template ID
-    variable_values: Dict[str, str]     # Resolved variable values
-    contract: Dict[str, Any]            # Generated OpenAPI contract
-    proxy_path: str                     # Generated proxy path
-    backend_url: str                    # Generated backend URL
+
+    instance_id: str  # Unique instance identifier
+    template_id: str  # Source template ID
+    variable_values: Dict[str, str]  # Resolved variable values
+    contract: Dict[str, Any]  # Generated OpenAPI contract
+    proxy_path: str  # Generated proxy path
+    backend_url: str  # Generated backend URL
 
     def get_resolution_key(self) -> str:
         """Generate key for resolving back to template."""
@@ -108,10 +112,11 @@ class ContractInstance:
 @dataclass
 class TemplateExpansionConfig:
     """Configuration for template expansion."""
-    max_instances: int = 100            # Maximum instances per template
+
+    max_instances: int = 100  # Maximum instances per template
     variable_discovery_enabled: bool = True  # Enable variable discovery
-    cache_instances: bool = True        # Cache generated instances
-    validate_backends: bool = False     # Validate backend URLs exist
+    cache_instances: bool = True  # Cache generated instances
+    validate_backends: bool = False  # Validate backend URLs exist
 
     def __post_init__(self):
         """Validate configuration."""
@@ -141,7 +146,9 @@ class TemplateExpander:
         combinations = self._generate_variable_combinations(template.variables)
 
         if len(combinations) > self.config.max_instances:
-            raise ValueError(f"Template would generate {len(combinations)} instances, max is {self.config.max_instances}")
+            raise ValueError(
+                f"Template would generate {len(combinations)} instances, max is {self.config.max_instances}"
+            )
 
         for combo in combinations:
             instance = self._create_instance(template, combo)
@@ -213,7 +220,7 @@ class TemplateExpander:
             variable_values=variables,
             contract=contract,
             proxy_path=proxy_path,
-            backend_url=backend_url
+            backend_url=backend_url,
         )
 
     def _substitute_contract_variables(self, contract: Dict[str, Any], variables: Dict[str, str]) -> Dict[str, Any]:
@@ -237,7 +244,7 @@ class TemplateExpander:
         """Check if request path matches template path pattern."""
         # Convert template path to regex
         pattern = re.escape(template_path)
-        pattern = pattern.replace(r'\{[^}]+\}', r'[^/]+')  # Replace variables with pattern
+        pattern = pattern.replace(r"\{[^}]+\}", r"[^/]+")  # Replace variables with pattern
         pattern = f"^{pattern}$"
 
         return bool(re.match(pattern, request_path))
@@ -246,10 +253,11 @@ class TemplateExpander:
 @dataclass
 class DiscoverySource:
     """Configuration for data-plane discovery."""
-    source_type: str                    # "s3", "api", "database"
-    connection_config: Dict[str, Any]   # Connection configuration
-    variable_mapping: Dict[str, str]    # Map discovery fields to variables
-    refresh_interval: int = 300         # Refresh interval in seconds
+
+    source_type: str  # "s3", "api", "database"
+    connection_config: Dict[str, Any]  # Connection configuration
+    variable_mapping: Dict[str, str]  # Map discovery fields to variables
+    refresh_interval: int = 300  # Refresh interval in seconds
 
     def __post_init__(self):
         """Validate discovery source."""
@@ -299,7 +307,8 @@ class VariableDiscovery:
 @dataclass
 class MultiTenantStipulation:
     """Extended stipulation with multi-tenant template support."""
-    base_stipulation: 'StipulationConfig'  # Base stipulation config
+
+    base_stipulation: "StipulationConfig"  # Base stipulation config
     template: Optional[ContractTemplate] = None  # Contract template
     expansion_config: TemplateExpansionConfig = field(default_factory=TemplateExpansionConfig)
     discovery_sources: List[DiscoverySource] = field(default_factory=list)

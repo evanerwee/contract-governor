@@ -52,11 +52,7 @@ def filter_unknown_fields(data: Dict[str, Any]) -> Tuple[Dict[str, Any], List[st
     return filtered_data, unknown_fields
 
 
-def format_unknown_fields_warning(
-    source_path: str,
-    unknown_fields: List[str],
-    valid_fields: Set[str]
-) -> str:
+def format_unknown_fields_warning(source_path: str, unknown_fields: List[str], valid_fields: Set[str]) -> str:
     """
     Format a warning message for unknown fields.
 

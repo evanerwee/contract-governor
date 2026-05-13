@@ -9,17 +9,14 @@ import inspect
 from functools import wraps
 from typing import Any, Dict, Optional, Type, TypeVar
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 # Global registry for injectable classes
 _injectable_classes: Dict[Type, Dict[str, Any]] = {}
 
 
 def injectable(
-    interface: Optional[Type] = None,
-    scope: str = "singleton",
-    name: Optional[str] = None,
-    tags: Optional[list] = None
+    interface: Optional[Type] = None, scope: str = "singleton", name: Optional[str] = None, tags: Optional[list] = None
 ):
     """
     Decorator to mark a class as injectable.
@@ -30,33 +27,31 @@ def injectable(
         name: Optional service name
         tags: Optional tags for service discovery
     """
+
     def decorator(cls: Type[T]) -> Type[T]:
         """Register the class as injectable and attach metadata."""
         # Store injectable metadata
-        _injectable_classes[cls] = {
-            'interface': interface or cls,
-            'scope': scope,
-            'name': name,
-            'tags': tags or []
-        }
+        _injectable_classes[cls] = {"interface": interface or cls, "scope": scope, "name": name, "tags": tags or []}
 
         # Add metadata to class
-        setattr(cls, '_injectable_metadata', _injectable_classes[cls])
+        setattr(cls, "_injectable_metadata", _injectable_classes[cls])
 
         return cls
 
     return decorator
 
 
-def inject(container_attr: str = '_container'):
+def inject(container_attr: str = "_container"):
     """
     Decorator to inject dependencies into method parameters.
 
     Args:
         container_attr: Attribute name where DI container is stored
     """
+
     def decorator(func):
         """Wrap the method to resolve dependencies from the DI container before invocation."""
+
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             """Resolve unbound parameters from the DI container and call the original method."""
@@ -70,7 +65,7 @@ def inject(container_attr: str = '_container'):
             parameters = signature.parameters
 
             # Skip 'self' parameter
-            param_names = [name for name in parameters.keys() if name != 'self']
+            param_names = [name for name in parameters.keys() if name != "self"]
 
             # Resolve dependencies for parameters not provided in kwargs
             for param_name in param_names:
@@ -91,13 +86,14 @@ def inject(container_attr: str = '_container'):
     return decorator
 
 
-def auto_wire(container_attr: str = '_container'):
+def auto_wire(container_attr: str = "_container"):
     """
     Class decorator to automatically wire dependencies in __init__.
 
     Args:
         container_attr: Attribute name where DI container is stored
     """
+
     def decorator(cls: Type[T]) -> Type[T]:
         """Replace the class __init__ with a version that auto-resolves dependencies."""
         original_init = cls.__init__
@@ -106,15 +102,15 @@ def auto_wire(container_attr: str = '_container'):
         def new_init(self, *args, **kwargs):
             """Auto-wire dependencies from the DI container before calling the original __init__."""
             # Store container reference
-            if 'container' in kwargs:
-                setattr(self, container_attr, kwargs.pop('container'))
+            if "container" in kwargs:
+                setattr(self, container_attr, kwargs.pop("container"))
 
             # Get original __init__ signature
             signature = inspect.signature(original_init)
             parameters = signature.parameters
 
             # Skip 'self' parameter
-            param_names = [name for name in parameters.keys() if name != 'self']
+            param_names = [name for name in parameters.keys() if name != "self"]
 
             # Get container
             container = getattr(self, container_attr, None)
@@ -135,7 +131,7 @@ def auto_wire(container_attr: str = '_container'):
             # Call original __init__
             original_init(self, *args, **kwargs)
 
-        setattr(cls, '__init__', new_init)
+        setattr(cls, "__init__", new_init)
         return cls
 
     return decorator

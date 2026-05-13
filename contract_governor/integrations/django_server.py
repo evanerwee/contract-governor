@@ -35,7 +35,7 @@ class DjangoCatalogServer(CatalogServer):
         catalog_provider: CatalogProvider,
         contract_provider: ContractProvider,
         health_provider: HealthProvider,
-        documentation_renderer: Optional[DocumentationRenderer] = None
+        documentation_renderer: Optional[DocumentationRenderer] = None,
     ):
         """
         Initialize Django catalog server with injected dependencies.
@@ -52,11 +52,14 @@ class DjangoCatalogServer(CatalogServer):
         self.documentation_renderer = documentation_renderer
         self.url_patterns: list[Any] = []
 
-    def register_catalog_endpoint(self, url_path: str = "api-catalog/", handler: Callable[..., Any] | None = None) -> None:
+    def register_catalog_endpoint(
+        self, url_path: str = "api-catalog/", handler: Callable[..., Any] | None = None
+    ) -> None:
         """Register Django URL patterns for API catalog."""
 
         class CatalogView(View):
             """View that serves the API catalog listing with optional filtering."""
+
             def __init__(self, server_instance):
                 """Initialize with a reference to the parent DjangoCatalogServer."""
                 super().__init__()
@@ -71,9 +74,9 @@ class DjangoCatalogServer(CatalogServer):
                 """Get API catalog with optional filtering."""
                 try:
                     # Extract query parameters
-                    api_major = request.GET.get('api_major')
-                    category = request.GET.get('category')
-                    visible_only = request.GET.get('visible_only', 'true').lower() == 'true'
+                    api_major = request.GET.get("api_major")
+                    category = request.GET.get("category")
+                    visible_only = request.GET.get("visible_only", "true").lower() == "true"
 
                     # Build filters
                     filters = {}
@@ -93,12 +96,8 @@ class DjangoCatalogServer(CatalogServer):
                     catalog_response = {
                         "contracts": [self.server._contract_to_summary(contract) for contract in contracts],
                         "total": len(contracts),
-                        "filters": {
-                            "api_major": api_major,
-                            "category": category,
-                            "visible_only": visible_only
-                        },
-                        "generated_at": datetime.now(timezone.utc).isoformat()
+                        "filters": {"api_major": api_major, "category": category, "visible_only": visible_only},
+                        "generated_at": datetime.now(timezone.utc).isoformat(),
                     }
 
                     return JsonResponse(catalog_response)
@@ -108,6 +107,7 @@ class DjangoCatalogServer(CatalogServer):
 
         class CatalogDocsView(View):
             """View that renders the HTML documentation page for the API catalog."""
+
             def __init__(self, server_instance):
                 """Initialize with a reference to the parent DjangoCatalogServer."""
                 super().__init__()
@@ -125,28 +125,29 @@ class DjangoCatalogServer(CatalogServer):
                     contract_summaries = [self.server._contract_to_summary(c) for c in visible_contracts]
                     html_content = self.server.documentation_renderer.render_catalog_page(contract_summaries)
 
-                    return HttpResponse(html_content, content_type='text/html')
+                    return HttpResponse(html_content, content_type="text/html")
 
                 except Exception as e:
                     return JsonResponse({"error": f"Failed to render catalog docs: {str(e)}"}, status=500)
 
         # Add URL patterns
         catalog_patterns = [
-            path('', CatalogView.as_view(server_instance=self), name='catalog'),
+            path("", CatalogView.as_view(server_instance=self), name="catalog"),
         ]
 
         if self.documentation_renderer:
-            catalog_patterns.append(
-                path('docs/', CatalogDocsView.as_view(server_instance=self), name='catalog_docs')
-            )
+            catalog_patterns.append(path("docs/", CatalogDocsView.as_view(server_instance=self), name="catalog_docs"))
 
         self.url_patterns.append(path(url_path, include(catalog_patterns)))
 
-    def register_contract_endpoint(self, url_path: str = "contracts/<str:category>/<str:api_major>/", handler: Callable[..., Any] | None = None) -> None:
+    def register_contract_endpoint(
+        self, url_path: str = "contracts/<str:category>/<str:api_major>/", handler: Callable[..., Any] | None = None
+    ) -> None:
         """Register Django URL patterns for individual contracts."""
 
         class ContractSpecView(View):
             """View that serves the OpenAPI specification for a specific contract."""
+
             def __init__(self, server_instance):
                 """Initialize with a reference to the parent DjangoCatalogServer."""
                 super().__init__()
@@ -160,7 +161,9 @@ class DjangoCatalogServer(CatalogServer):
 
                     spec = self.server.contract_provider.get_contract_spec(category, api_major)
                     if not spec:
-                        return JsonResponse({"error": f"Contract specification not available: {category}:{api_major}"}, status=404)
+                        return JsonResponse(
+                            {"error": f"Contract specification not available: {category}:{api_major}"}, status=404
+                        )
 
                     return JsonResponse(spec)
 
@@ -169,6 +172,7 @@ class DjangoCatalogServer(CatalogServer):
 
         class ContractMetadataView(View):
             """View that serves metadata for a specific contract."""
+
             def __init__(self, server_instance):
                 """Initialize with a reference to the parent DjangoCatalogServer."""
                 super().__init__()
@@ -179,7 +183,9 @@ class DjangoCatalogServer(CatalogServer):
                 try:
                     metadata = self.server.contract_provider.get_contract_metadata(category, api_major)
                     if not metadata:
-                        return JsonResponse({"error": f"Contract metadata not found: {category}:{api_major}"}, status=404)
+                        return JsonResponse(
+                            {"error": f"Contract metadata not found: {category}:{api_major}"}, status=404
+                        )
 
                     return JsonResponse(metadata)
 
@@ -188,6 +194,7 @@ class DjangoCatalogServer(CatalogServer):
 
         class ContractDocsView(View):
             """View that renders the HTML documentation page for a specific contract."""
+
             def __init__(self, server_instance):
                 """Initialize with a reference to the parent DjangoCatalogServer."""
                 super().__init__()
@@ -203,26 +210,27 @@ class DjangoCatalogServer(CatalogServer):
                         return JsonResponse({"error": f"Contract not found: {category}:{api_major}"}, status=404)
 
                     from html import escape as html_escape
+
                     safe_category = html_escape(category)
                     safe_api_major = html_escape(api_major)
                     contract_url = f"/contracts/{safe_category}/{safe_api_major}/openapi.json"
                     title = f"{safe_category} {safe_api_major} API Documentation"
 
                     html_content = self.server.documentation_renderer.render_contract_page(contract_url, title)
-                    return HttpResponse(html_content, content_type='text/html')
+                    return HttpResponse(html_content, content_type="text/html")
 
                 except Exception as e:
                     return JsonResponse({"error": f"Failed to render contract docs: {str(e)}"}, status=500)
 
         # Add URL patterns
         contract_patterns = [
-            path('openapi.json', ContractSpecView.as_view(server_instance=self), name='contract_spec'),
-            path('metadata', ContractMetadataView.as_view(server_instance=self), name='contract_metadata'),
+            path("openapi.json", ContractSpecView.as_view(server_instance=self), name="contract_spec"),
+            path("metadata", ContractMetadataView.as_view(server_instance=self), name="contract_metadata"),
         ]
 
         if self.documentation_renderer:
             contract_patterns.append(
-                path('docs/', ContractDocsView.as_view(server_instance=self), name='contract_docs')
+                path("docs/", ContractDocsView.as_view(server_instance=self), name="contract_docs")
             )
 
         self.url_patterns.append(path(url_path, include(contract_patterns)))
@@ -232,6 +240,7 @@ class DjangoCatalogServer(CatalogServer):
 
         class CustomSpecView(View):
             """View that serves a custom OpenAPI specification at a given path."""
+
             def __init__(self, spec_data):
                 """Initialize with the OpenAPI spec data to serve."""
                 super().__init__()
@@ -248,6 +257,7 @@ class DjangoCatalogServer(CatalogServer):
 
         class HealthView(View):
             """View that provides a liveness health check endpoint."""
+
             def __init__(self, server_instance):
                 """Initialize with a reference to the parent DjangoCatalogServer."""
                 super().__init__()
@@ -264,6 +274,7 @@ class DjangoCatalogServer(CatalogServer):
 
         class ReadyView(View):
             """View that provides a readiness probe endpoint."""
+
             def __init__(self, server_instance):
                 """Initialize with a reference to the parent DjangoCatalogServer."""
                 super().__init__()
@@ -280,6 +291,7 @@ class DjangoCatalogServer(CatalogServer):
 
         class InfoView(View):
             """View that provides service information metadata."""
+
             def __init__(self, server_instance):
                 """Initialize with a reference to the parent DjangoCatalogServer."""
                 super().__init__()
@@ -294,9 +306,9 @@ class DjangoCatalogServer(CatalogServer):
 
         # Add health URL patterns
         health_patterns = [
-            path('health/', HealthView.as_view(server_instance=self), name='health'),
-            path('ready/', ReadyView.as_view(server_instance=self), name='ready'),
-            path('info/', InfoView.as_view(server_instance=self), name='info'),
+            path("health/", HealthView.as_view(server_instance=self), name="health"),
+            path("ready/", ReadyView.as_view(server_instance=self), name="ready"),
+            path("info/", InfoView.as_view(server_instance=self), name="info"),
         ]
 
         self.url_patterns.extend(health_patterns)
@@ -322,7 +334,7 @@ class DjangoCatalogServer(CatalogServer):
             "proxy_prefix": contract.proxy_prefix,
             "source_service": contract.source_service,
             "exposed_at": contract.exposed_at.isoformat() if contract.exposed_at else None,
-            "stipulation_applied": contract.stipulation_applied
+            "stipulation_applied": contract.stipulation_applied,
         }
 
 
@@ -334,7 +346,7 @@ class DjangoAppFactory:
         catalog_provider: CatalogProvider,
         contract_provider: ContractProvider,
         health_provider: HealthProvider,
-        documentation_renderer: Optional[DocumentationRenderer] = None
+        documentation_renderer: Optional[DocumentationRenderer] = None,
     ) -> List:
         """
         Create Django URL patterns configured for catalog serving.
@@ -353,7 +365,7 @@ class DjangoAppFactory:
             catalog_provider=catalog_provider,
             contract_provider=contract_provider,
             health_provider=health_provider,
-            documentation_renderer=documentation_renderer
+            documentation_renderer=documentation_renderer,
         )
 
         # Register all endpoints
@@ -366,18 +378,18 @@ class DjangoAppFactory:
 
 # Example Django settings configuration
 DJANGO_CATALOG_SETTINGS = {
-    'INSTALLED_APPS': [
-        'django.contrib.contenttypes',
-        'django.contrib.auth',
-        'contract_stipulations.integrations.django_server',
+    "INSTALLED_APPS": [
+        "django.contrib.contenttypes",
+        "django.contrib.auth",
+        "contract_stipulations.integrations.django_server",
     ],
-    'MIDDLEWARE': [
-        'django.middleware.security.SecurityMiddleware',
-        'django.middleware.common.CommonMiddleware',
-        'django.middleware.csrf.CsrfViewMiddleware',
+    "MIDDLEWARE": [
+        "django.middleware.security.SecurityMiddleware",
+        "django.middleware.common.CommonMiddleware",
+        "django.middleware.csrf.CsrfViewMiddleware",
     ],
-    'ROOT_URLCONF': 'contract_stipulations.integrations.django_urls',
-    'SECRET_KEY': os.environ.get('DJANGO_SECRET_KEY', ''),
-    'DEBUG': False,
-    'ALLOWED_HOSTS': ['*'],
+    "ROOT_URLCONF": "contract_stipulations.integrations.django_urls",
+    "SECRET_KEY": os.environ.get("DJANGO_SECRET_KEY", ""),
+    "DEBUG": False,
+    "ALLOWED_HOSTS": ["*"],
 }

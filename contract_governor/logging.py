@@ -28,6 +28,7 @@ class CompactFormatter(logging.Formatter):
     Attributes:
         None
     """
+
     def format(self, record: logging.LogRecord) -> str:
         """
         Formats a log record by temporarily shortening its `name` attribute, producing
@@ -63,10 +64,10 @@ class CompactFormatter(logging.Formatter):
             str: The shortened version of the record name, with intermediate parts
             abbreviated to their initials.
         """
-        if '.' not in name:
+        if "." not in name:
             return name
 
-        parts = name.split('.')
+        parts = name.split(".")
         return f"{'.'.join(p[0] for p in parts[0:-1])}.{parts[-1]}"
 
 
@@ -95,12 +96,13 @@ class ModuleFilter(logging.Filter):
             excluded from logging. A single entry or wildcard (*) can also be
             specified.
     """
+
     def __init__(
-            self,
-            included_modules: Optional[Dict[LoggingLevel, Union[str, List[str]]]] = None,
-            excluded_modules: Optional[Dict[LoggingLevel, Union[str, List[str]]]] = None,
-            included_messages: Optional[Dict[LoggingLevel, Union[str, List[str]]]] = None,
-            excluded_messages: Optional[Dict[LoggingLevel, Union[str, List[str]]]] = None,
+        self,
+        included_modules: Optional[Dict[LoggingLevel, Union[str, List[str]]]] = None,
+        excluded_modules: Optional[Dict[LoggingLevel, Union[str, List[str]]]] = None,
+        included_messages: Optional[Dict[LoggingLevel, Union[str, List[str]]]] = None,
+        excluded_messages: Optional[Dict[LoggingLevel, Union[str, List[str]]]] = None,
     ) -> None:
         """
         Initialize the ModuleFilter with inclusion and exclusion rules.
@@ -149,71 +151,66 @@ class ModuleFilter(logging.Filter):
             return False
 
         included_messages = self._included_messages.get(record.levelno, [])
-        if any(record_message.startswith(x) for x in included_messages) or '*' in included_messages:
+        if any(record_message.startswith(x) for x in included_messages) or "*" in included_messages:
             return True
 
         record_module = record.name
 
         excluded_modules = self._excluded_modules.get(record.levelno, [])
-        if any(record_module.startswith(x) for x in excluded_modules) or '*' in excluded_modules:
+        if any(record_module.startswith(x) for x in excluded_modules) or "*" in excluded_modules:
             return False
 
         included_modules = self._included_modules.get(record.levelno, [])
-        if any(record_module.startswith(x) for x in included_modules) or '*' in included_modules:
+        if any(record_module.startswith(x) for x in included_modules) or "*" in included_modules:
             return True
 
         return False
 
 
 BASE_LOGGING_CONFIG = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'filters': {
-        'moduleFilter': {
-            '()': ModuleFilter,
-            'included_modules': {
-                logging.INFO: '*',
-                logging.WARNING: '*',
-                logging.ERROR: '*'
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "moduleFilter": {
+            "()": ModuleFilter,
+            "included_modules": {logging.INFO: "*", logging.WARNING: "*", logging.ERROR: "*"},
+            "excluded_modules": {
+                logging.INFO: ["opensearch", "boto", "urllib"],
+                logging.WARNING: ["urllib"],
             },
-            'excluded_modules': {
-                logging.INFO: ['opensearch', 'boto', 'urllib'],
-                logging.WARNING: ['urllib'],
+            "excluded_messages": {
+                logging.WARNING: ["Removing unpickleable private attribute"],
             },
-            'excluded_messages': {
-                logging.WARNING: ['Removing unpickleable private attribute'],
-            },
-            'included_messages': {
-            }
+            "included_messages": {},
         }
     },
-    'formatters': {
-        'default': {
-            '()': CompactFormatter,
-            'fmt': '%(asctime)s:%(levelname)s:%(name)-15s:%(message)s',
-            'datefmt': '%Y-%m-%d %H:%M:%S'
+    "formatters": {
+        "default": {
+            "()": CompactFormatter,
+            "fmt": "%(asctime)s:%(levelname)s:%(name)-15s:%(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
         }
     },
-    'handlers': {
-        'stdout': {
-            'class': 'logging.StreamHandler',
-            'stream': 'ext://sys.stdout',
-            'filters': ['moduleFilter'],
-            'formatter': 'default'
+    "handlers": {
+        "stdout": {
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+            "filters": ["moduleFilter"],
+            "formatter": "default",
         },
         # NOTE: file_handler is NOT defined here by default to avoid errors
         # in container environments where the working directory may be read-only.
         # It is added dynamically in set_advanced_logging_config() when filename is provided.
     },
-    'loggers': {'': {'handlers': ['stdout'], 'level': logging.INFO}},
+    "loggers": {"": {"handlers": ["stdout"], "level": logging.INFO}},
 }
 
 
 def set_logging_config(
-        logging_level: Union[str, LoggingLevel],
-        debug_include_modules: Optional[Union[str, List[str]]] = None,
-        debug_exclude_modules: Optional[Union[str, List[str]]] = None,
-        filename: Optional[str] = None
+    logging_level: Union[str, LoggingLevel],
+    debug_include_modules: Optional[Union[str, List[str]]] = None,
+    debug_exclude_modules: Optional[Union[str, List[str]]] = None,
+    filename: Optional[str] = None,
 ) -> None:
     """Sets the logging configuration for the application.
 
@@ -239,17 +236,17 @@ def set_logging_config(
         logging_level,
         included_modules={logging.DEBUG: debug_include_modules} if debug_include_modules is not None else None,
         excluded_modules={logging.DEBUG: debug_exclude_modules} if debug_exclude_modules is not None else None,
-        filename=filename
+        filename=filename,
     )
 
 
 def set_advanced_logging_config(
-        logging_level: Union[str, LoggingLevel],
-        included_modules: Optional[Dict[LoggingLevel, Union[str, List[str]]]] = None,
-        excluded_modules: Optional[Dict[LoggingLevel, Union[str, List[str]]]] = None,
-        included_messages: Optional[Dict[LoggingLevel, Union[str, List[str]]]] = None,
-        excluded_messages: Optional[Dict[LoggingLevel, Union[str, List[str]]]] = None,
-        filename: Optional[str] = None
+    logging_level: Union[str, LoggingLevel],
+    included_modules: Optional[Dict[LoggingLevel, Union[str, List[str]]]] = None,
+    excluded_modules: Optional[Dict[LoggingLevel, Union[str, List[str]]]] = None,
+    included_messages: Optional[Dict[LoggingLevel, Union[str, List[str]]]] = None,
+    excluded_messages: Optional[Dict[LoggingLevel, Union[str, List[str]]]] = None,
+    filename: Optional[str] = None,
 ) -> None:
     """
     Configures advanced logging options to fine-tune logging behavior. Allows setting
@@ -279,27 +276,27 @@ def set_advanced_logging_config(
 
     """
     if not _is_valid_logging_level(logging_level):
-        warnings.warn(f'Unknown logging level {logging_level!r} provided.', UserWarning)
+        warnings.warn(f"Unknown logging level {logging_level!r} provided.", UserWarning)
     if isinstance(logging_level, int):
         logging_level = logging.getLevelName(logging_level)
 
     config: dict[str, Any] = BASE_LOGGING_CONFIG.copy()  # type: ignore[assignment]
-    config['loggers']['']['level'] = logging_level.upper()
-    config['filters']['moduleFilter']['included_modules'].update(included_modules or dict())
-    config['filters']['moduleFilter']['excluded_modules'].update(excluded_modules or dict())
-    config['filters']['moduleFilter']['included_messages'].update(included_messages or dict())
-    config['filters']['moduleFilter']['excluded_messages'].update(excluded_messages or dict())
+    config["loggers"][""]["level"] = logging_level.upper()
+    config["filters"]["moduleFilter"]["included_modules"].update(included_modules or dict())
+    config["filters"]["moduleFilter"]["excluded_modules"].update(excluded_modules or dict())
+    config["filters"]["moduleFilter"]["included_messages"].update(included_messages or dict())
+    config["filters"]["moduleFilter"]["excluded_messages"].update(excluded_messages or dict())
 
     if filename:
         # Add file_handler dynamically only when filename is provided
-        config['handlers']['file_handler'] = {
-            'formatter': 'default',
-            'class': 'logging.FileHandler',
-            'filename': filename,
-            'filters': ['moduleFilter'],
-            'mode': 'a',
+        config["handlers"]["file_handler"] = {
+            "formatter": "default",
+            "class": "logging.FileHandler",
+            "filename": filename,
+            "filters": ["moduleFilter"],
+            "mode": "a",
         }
-        config['loggers']['']['handlers'].append('file_handler')
+        config["loggers"][""]["handlers"].append("file_handler")
 
     logging.config.dictConfig(config)
 

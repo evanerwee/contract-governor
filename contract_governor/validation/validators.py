@@ -45,10 +45,7 @@ class BaseValidator(ABC):
         Returns:
             ValidationResult initialized for this validator
         """
-        return ValidationResult(
-            is_valid=is_valid,
-            applied_stipulation=stipulation.stipulation_id
-        )
+        return ValidationResult(is_valid=is_valid, applied_stipulation=stipulation.stipulation_id)
 
 
 class OpenAPIVersionValidator(BaseValidator):
@@ -76,7 +73,7 @@ class OpenAPIVersionValidator(BaseValidator):
             result.add_error(
                 code="MISSING_OPENAPI_VERSION",
                 message="Contract is missing required 'openapi' version field",
-                field_path="openapi"
+                field_path="openapi",
             )
             return result
 
@@ -87,7 +84,7 @@ class OpenAPIVersionValidator(BaseValidator):
             result.add_error(
                 code="INVALID_OPENAPI_VERSION_TYPE",
                 message=f"OpenAPI version must be a string, got {type(openapi_version).__name__}",
-                field_path="openapi"
+                field_path="openapi",
             )
             return result
 
@@ -99,7 +96,7 @@ class OpenAPIVersionValidator(BaseValidator):
                 message=f"OpenAPI version '{openapi_version}' does not meet requirement '{required_prefix}x'",
                 field_path="openapi",
                 required_version=required_prefix,
-                actual_version=openapi_version
+                actual_version=openapi_version,
             )
 
         # Validate semantic version format
@@ -107,7 +104,7 @@ class OpenAPIVersionValidator(BaseValidator):
             result.add_warning(
                 code="INVALID_VERSION_FORMAT",
                 message=f"OpenAPI version '{openapi_version}' does not follow semantic versioning format",
-                field_path="openapi"
+                field_path="openapi",
             )
 
         return result
@@ -122,7 +119,9 @@ class OpenAPIVersionValidator(BaseValidator):
         Returns:
             True if version format is valid
         """
-        version_pattern = r'^\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$'
+        version_pattern = (
+            r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$"
+        )
         return bool(re.match(version_pattern, version))
 
 
@@ -152,13 +151,13 @@ class RequiredFieldsValidator(BaseValidator):
                 result.add_error(
                     code="MISSING_REQUIRED_FIELD",
                     message=f"Required field '{field_path}' is missing from contract",
-                    field_path=field_path
+                    field_path=field_path,
                 )
             elif self._field_is_empty(contract, field_path):
                 result.add_warning(
                     code="EMPTY_REQUIRED_FIELD",
                     message=f"Required field '{field_path}' is present but empty",
-                    field_path=field_path
+                    field_path=field_path,
                 )
 
         return result
@@ -176,7 +175,7 @@ class RequiredFieldsValidator(BaseValidator):
         """
         try:
             current = contract
-            for part in field_path.split('.'):
+            for part in field_path.split("."):
                 if not isinstance(current, dict) or part not in current:
                     return False
                 current = current[part]
@@ -197,7 +196,7 @@ class RequiredFieldsValidator(BaseValidator):
         """
         try:
             current = contract
-            for part in field_path.split('.'):
+            for part in field_path.split("."):
                 current = current[part]
 
             # Check various empty conditions
@@ -244,9 +243,7 @@ class ForbiddenMethodsValidator(BaseValidator):
         paths = contract.get("paths", {})
         if not isinstance(paths, dict):
             result.add_warning(
-                code="INVALID_PATHS_SECTION",
-                message="Paths section is not a valid object",
-                field_path="paths"
+                code="INVALID_PATHS_SECTION", message="Paths section is not a valid object", field_path="paths"
             )
             return result
 
@@ -257,7 +254,7 @@ class ForbiddenMethodsValidator(BaseValidator):
 
             for method in path_obj.keys():
                 # Skip non-HTTP method keys (like parameters, summary, etc.)
-                if method.lower() not in ['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace']:
+                if method.lower() not in ["get", "post", "put", "patch", "delete", "head", "options", "trace"]:
                     continue
 
                 if method.lower() in forbidden_methods:
@@ -266,7 +263,7 @@ class ForbiddenMethodsValidator(BaseValidator):
                         message=f"Forbidden HTTP method '{method.upper()}' found in path '{path}'",
                         field_path=f"paths.{path}.{method}",
                         forbidden_method=method.upper(),
-                        path=path
+                        path=path,
                     )
 
         return result
@@ -315,7 +312,7 @@ class TenantScopingValidator(BaseValidator):
                 message=f"Tenant-scoped API missing scope parameter in proxy_prefix_format: {proxy_format}",
                 field_path="proxy_prefix_format",
                 proxy_format=proxy_format,
-                expected_parameters=scope_parameters
+                expected_parameters=scope_parameters,
             )
 
         # Validate that the proxy format is well-formed
@@ -324,7 +321,7 @@ class TenantScopingValidator(BaseValidator):
                 code="INVALID_PROXY_FORMAT",
                 message=f"Proxy prefix format is not well-formed: {proxy_format}",
                 field_path="proxy_prefix_format",
-                proxy_format=proxy_format
+                proxy_format=proxy_format,
             )
 
         # Check for tenant-specific contract requirements
@@ -342,18 +339,18 @@ class TenantScopingValidator(BaseValidator):
         Returns:
             True if format is valid
         """
-        if not proxy_format.startswith('/'):
+        if not proxy_format.startswith("/"):
             return False
 
         # Check for balanced braces in parameters
-        open_braces = proxy_format.count('{')
-        close_braces = proxy_format.count('}')
+        open_braces = proxy_format.count("{")
+        close_braces = proxy_format.count("}")
 
         return open_braces == close_braces
 
-    def _validate_tenant_contract_requirements(self, contract: Dict[str, Any],
-                                             stipulation: StipulationConfig,
-                                             result: ValidationResult) -> None:
+    def _validate_tenant_contract_requirements(
+        self, contract: Dict[str, Any], stipulation: StipulationConfig, result: ValidationResult
+    ) -> None:
         """
         Validate contract-specific requirements for tenant-scoped APIs.
 
@@ -372,7 +369,7 @@ class TenantScopingValidator(BaseValidator):
                 if isinstance(scheme, dict):
                     # Check for tenant-related fields in security scheme
                     scheme_str = str(scheme).lower()
-                    if any(keyword in scheme_str for keyword in ['tenant', 'scope', 'organization']):
+                    if any(keyword in scheme_str for keyword in ["tenant", "scope", "organization"]):
                         has_tenant_auth = True
                         break
 
@@ -380,7 +377,7 @@ class TenantScopingValidator(BaseValidator):
                 result.add_warning(
                     code="MISSING_TENANT_AUTHENTICATION",
                     message="Tenant-scoped API should include tenant-aware authentication schemes",
-                    field_path="components.securitySchemes"
+                    field_path="components.securitySchemes",
                 )
 
 
@@ -416,7 +413,7 @@ class VersionAlignmentValidator(BaseValidator):
             result.add_error(
                 code="MISSING_VERSION_INFORMATION",
                 message="Cannot validate version alignment: missing version information",
-                field_path="info.version"
+                field_path="info.version",
             )
             return result
 
@@ -429,7 +426,7 @@ class VersionAlignmentValidator(BaseValidator):
                     message=error,
                     field_path="info.version",
                     api_major_version=version_info.api_major_version,
-                    contract_version=version_info.contract_version
+                    contract_version=version_info.contract_version,
                 )
 
         # Additional version format validations
@@ -463,9 +460,7 @@ class VersionAlignmentValidator(BaseValidator):
             api_major_version = self._infer_api_major_version(contract_version)
 
             return VersionInfo(
-                api_major_version=api_major_version,
-                contract_version=contract_version,
-                openapi_version=openapi_version
+                api_major_version=api_major_version, contract_version=contract_version, openapi_version=openapi_version
             )
         except Exception:
             return None
@@ -481,7 +476,7 @@ class VersionAlignmentValidator(BaseValidator):
             Inferred API major version (e.g., "v1")
         """
         # Extract major version number from contract version
-        parts = contract_version.split('.')
+        parts = contract_version.split(".")
         if parts and parts[0].isdigit():
             return f"v{parts[0]}"
         return "v1"  # Default fallback
@@ -499,15 +494,15 @@ class VersionAlignmentValidator(BaseValidator):
             result.add_warning(
                 code="INVALID_CONTRACT_VERSION_FORMAT",
                 message=f"Contract version '{version_info.contract_version}' does not follow semantic versioning",
-                field_path="info.version"
+                field_path="info.version",
             )
 
         # Validate API major version format
-        if not version_info.api_major_version.startswith('v'):
+        if not version_info.api_major_version.startswith("v"):
             result.add_warning(
                 code="INVALID_API_MAJOR_FORMAT",
                 message=f"API major version '{version_info.api_major_version}' should start with 'v'",
-                api_major_version=version_info.api_major_version
+                api_major_version=version_info.api_major_version,
             )
 
     def _is_valid_semver(self, version: str) -> bool:
@@ -520,5 +515,7 @@ class VersionAlignmentValidator(BaseValidator):
         Returns:
             True if version is valid semantic version
         """
-        semver_pattern = r'^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$'
+        semver_pattern = (
+            r"^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$"
+        )
         return bool(re.match(semver_pattern, version))

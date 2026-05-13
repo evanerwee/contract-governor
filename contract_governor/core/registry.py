@@ -41,7 +41,9 @@ class InMemoryContractRegistry(ContractRegistry):
         with self._lock:
             self._raw_contracts[key] = record
 
-    def get_raw_contract(self, category: str, api_major: str, source_service: str | None = None) -> Optional[RawContractRecord]:
+    def get_raw_contract(
+        self, category: str, api_major: str, source_service: str | None = None
+    ) -> Optional[RawContractRecord]:
         """
         Retrieve a raw contract record for internal processing only.
 
@@ -83,7 +85,9 @@ class InMemoryContractRegistry(ContractRegistry):
         with self._lock:
             self._exposed_contracts[key] = record
 
-    def get_exposed_contract(self, category: str, api_major: str, source_service: str | None = None) -> Optional[ExposedContractRecord]:
+    def get_exposed_contract(
+        self, category: str, api_major: str, source_service: str | None = None
+    ) -> Optional[ExposedContractRecord]:
         """
         Retrieve an exposed contract record for client serving.
 
@@ -178,10 +182,7 @@ class InMemoryContractRegistry(ContractRegistry):
             Dictionary with 'raw' and 'exposed' counts
         """
         with self._lock:
-            return {
-                'raw': len(self._raw_contracts),
-                'exposed': len(self._exposed_contracts)
-            }
+            return {"raw": len(self._raw_contracts), "exposed": len(self._exposed_contracts)}
 
     def _make_key(self, category: str, api_major: str, source_service: str | None = None) -> str:
         """Create a registry key from category, API major version, and optionally source service."""
@@ -246,16 +247,16 @@ class InMemoryContractRegistry(ContractRegistry):
             "raw_contracts": {
                 "count": len(raw_contracts),
                 "categories": list(raw_categories),
-                "source_services": list(raw_services)
+                "source_services": list(raw_services),
             },
             "exposed_contracts": {
                 "count": len(exposed_contracts),
                 "categories": list(exposed_categories),
                 "source_services": list(exposed_services),
-                "catalog_visible_count": len(visible_contracts)
+                "catalog_visible_count": len(visible_contracts),
             },
             "coverage": {
                 "categories_with_exposed": len(exposed_categories),
-                "categories_raw_only": len(raw_categories - exposed_categories)
-            }
+                "categories_raw_only": len(raw_categories - exposed_categories),
+            },
         }

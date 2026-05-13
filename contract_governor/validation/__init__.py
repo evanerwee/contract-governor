@@ -25,5 +25,5 @@ __all__ = [
     "RequiredFieldsValidator",
     "ForbiddenMethodsValidator",
     "TenantScopingValidator",
-    "VersionAlignmentValidator"
+    "VersionAlignmentValidator",
 ]

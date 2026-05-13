@@ -104,7 +104,7 @@ class LocalFileConfigSource(ConfigurationSource):
             success=False,
             source_path=str(self.config_dir / f"{filename_base}.yaml"),
             source_exists=False,
-            error_message=f"No stipulation file found for {key}"
+            error_message=f"No stipulation file found for {key}",
         )
         return None
 
@@ -143,10 +143,10 @@ class LocalFileConfigSource(ConfigurationSource):
             "metadata_block": config.metadata_block,
             "catalog_default_visible": config.catalog_default_visible,
             "extension_namespace": config.extension_namespace,
-            "enforce_version_alignment": config.enforce_version_alignment
+            "enforce_version_alignment": config.enforce_version_alignment,
         }
 
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             yaml.dump(config_dict, f, default_flow_style=False, sort_keys=True)
 
         logger.info(f"Saved stipulation {category}:{api_major_version} to {file_path}")
@@ -216,18 +216,18 @@ class LocalFileConfigSource(ConfigurationSource):
             "location": str(self.config_dir.absolute()),
             "available": self.is_available(),
             "file_count": len(list(self.config_dir.glob("*.yaml")) + list(self.config_dir.glob("*.json"))),
-            "last_checked": datetime.now(timezone.utc).isoformat()
+            "last_checked": datetime.now(timezone.utc).isoformat(),
         }
 
     def _parse_filename(self, filename: str) -> tuple[str, str]:
         """Parse category and API major version from filename."""
-        parts = filename.split('_')
+        parts = filename.split("_")
         if len(parts) < 2:
             raise ValueError(f"Invalid filename format: {filename}")
 
         # Last part is API major version, everything else is category
         api_major = parts[-1]
-        category = '_'.join(parts[:-1])
+        category = "_".join(parts[:-1])
 
         return category, api_major
 
@@ -251,12 +251,12 @@ class LocalFileConfigSource(ConfigurationSource):
                 source_path=str(file_path),
                 source_exists=False,
                 valid_fields=valid_fields,
-                error_message=f"File not found: {file_path}"
+                error_message=f"File not found: {file_path}",
             )
 
         try:
-            with open(file_path, 'r') as f:
-                if file_path.suffix == '.yaml':
+            with open(file_path, "r") as f:
+                if file_path.suffix == ".yaml":
                     data = yaml.safe_load(f)
                 else:
                     data = json.load(f)
@@ -266,9 +266,7 @@ class LocalFileConfigSource(ConfigurationSource):
 
             # Log warning for unknown fields using shared formatter
             if unknown_fields:
-                logger.warning(format_unknown_fields_warning(
-                    str(file_path), unknown_fields, valid_fields
-                ))
+                logger.warning(format_unknown_fields_warning(str(file_path), unknown_fields, valid_fields))
 
             config = StipulationConfig(**filtered_data)
 
@@ -278,7 +276,7 @@ class LocalFileConfigSource(ConfigurationSource):
                 source_path=str(file_path),
                 source_exists=True,
                 unknown_fields=unknown_fields,
-                valid_fields=valid_fields
+                valid_fields=valid_fields,
             )
 
         except Exception as e:
@@ -288,7 +286,7 @@ class LocalFileConfigSource(ConfigurationSource):
                 source_path=str(file_path),
                 source_exists=True,
                 valid_fields=valid_fields,
-                error_message=str(e)
+                error_message=str(e),
             )
 
 
@@ -309,7 +307,7 @@ class S3ConfigSource(ConfigurationSource):
             region: AWS region
         """
         self.bucket_name = bucket_name
-        self.prefix = prefix.rstrip('/') + '/'
+        self.prefix = prefix.rstrip("/") + "/"
         self.region = region
         self._s3_client = None
         self._cache: dict[str, StipulationConfig] = {}
@@ -323,7 +321,8 @@ class S3ConfigSource(ConfigurationSource):
         if self._s3_client is None:
             try:
                 import boto3
-                self._s3_client = boto3.client('s3', region_name=self.region)
+
+                self._s3_client = boto3.client("s3", region_name=self.region)
             except ImportError:
                 raise ImportError("boto3 is required for S3ConfigSource. Install with: pip install boto3")
         return self._s3_client
@@ -333,14 +332,11 @@ class S3ConfigSource(ConfigurationSource):
         stipulations = {}
 
         try:
-            response = self.s3_client.list_objects_v2(
-                Bucket=self.bucket_name,
-                Prefix=self.prefix
-            )
+            response = self.s3_client.list_objects_v2(Bucket=self.bucket_name, Prefix=self.prefix)
 
-            for obj in response.get('Contents', []):
-                key = obj['Key']
-                if key.endswith('.json'):
+            for obj in response.get("Contents", []):
+                key = obj["Key"]
+                if key.endswith(".json"):
                     try:
                         category, api_major = self._parse_s3_key(key)
                         result_key = f"{category}:{api_major}"
@@ -411,15 +407,12 @@ class S3ConfigSource(ConfigurationSource):
             "extension_namespace": config.extension_namespace,
             "enforce_version_alignment": config.enforce_version_alignment,
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "source": "s3"
+            "source": "s3",
         }
 
         try:
             self.s3_client.put_object(
-                Bucket=self.bucket_name,
-                Key=key,
-                Body=json.dumps(config_dict, indent=2),
-                ContentType='application/json'
+                Bucket=self.bucket_name, Key=key, Body=json.dumps(config_dict, indent=2), ContentType="application/json"
             )
             logger.info(f"Saved stipulation {category}:{api_major_version} to S3 key {key}")
         except Exception as e:
@@ -443,15 +436,11 @@ class S3ConfigSource(ConfigurationSource):
         categories = set()
 
         try:
-            response = self.s3_client.list_objects_v2(
-                Bucket=self.bucket_name,
-                Prefix=self.prefix,
-                Delimiter='/'
-            )
+            response = self.s3_client.list_objects_v2(Bucket=self.bucket_name, Prefix=self.prefix, Delimiter="/")
 
-            for prefix_info in response.get('CommonPrefixes', []):
-                prefix_key = prefix_info['Prefix']
-                category = prefix_key[len(self.prefix):].rstrip('/')
+            for prefix_info in response.get("CommonPrefixes", []):
+                prefix_key = prefix_info["Prefix"]
+                category = prefix_key[len(self.prefix) :].rstrip("/")
                 if category:
                     categories.add(category)
 
@@ -466,16 +455,13 @@ class S3ConfigSource(ConfigurationSource):
         prefix = f"{self.prefix}{category}/"
 
         try:
-            response = self.s3_client.list_objects_v2(
-                Bucket=self.bucket_name,
-                Prefix=prefix
-            )
+            response = self.s3_client.list_objects_v2(Bucket=self.bucket_name, Prefix=prefix)
 
-            for obj in response.get('Contents', []):
-                key = obj['Key']
-                if key.endswith('.json'):
-                    filename = key[len(prefix):]
-                    version = filename.replace('.json', '')
+            for obj in response.get("Contents", []):
+                key = obj["Key"]
+                if key.endswith(".json"):
+                    filename = key[len(prefix) :]
+                    version = filename.replace(".json", "")
                     versions.add(version)
 
         except Exception as e:
@@ -499,19 +485,19 @@ class S3ConfigSource(ConfigurationSource):
             "prefix": self.prefix,
             "region": self.region,
             "available": self.is_available(),
-            "last_checked": datetime.now(timezone.utc).isoformat()
+            "last_checked": datetime.now(timezone.utc).isoformat(),
         }
 
     def _parse_s3_key(self, key: str) -> tuple[str, str]:
         """Parse category and API major version from S3 key."""
-        relative_key = key[len(self.prefix):]
-        parts = relative_key.split('/')
+        relative_key = key[len(self.prefix) :]
+        parts = relative_key.split("/")
 
-        if len(parts) != 2 or not parts[1].endswith('.json'):
+        if len(parts) != 2 or not parts[1].endswith(".json"):
             raise ValueError(f"Invalid S3 key format: {key}")
 
         category = parts[0]
-        api_major = parts[1].replace('.json', '')
+        api_major = parts[1].replace(".json", "")
 
         return category, api_major
 
@@ -531,20 +517,18 @@ class S3ConfigSource(ConfigurationSource):
 
         try:
             response = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
-            data = json.loads(response['Body'].read().decode('utf-8'))
+            data = json.loads(response["Body"].read().decode("utf-8"))
 
             # Remove S3-specific metadata before field validation
-            data.pop('created_at', None)
-            data.pop('source', None)
+            data.pop("created_at", None)
+            data.pop("source", None)
 
             # Use shared utility for field filtering
             filtered_data, unknown_fields = filter_unknown_fields(data)
 
             # Log warning for unknown fields using shared formatter
             if unknown_fields:
-                logger.warning(format_unknown_fields_warning(
-                    key, unknown_fields, valid_fields
-                ))
+                logger.warning(format_unknown_fields_warning(key, unknown_fields, valid_fields))
 
             config = StipulationConfig(**filtered_data)
 
@@ -554,7 +538,7 @@ class S3ConfigSource(ConfigurationSource):
                 source_path=key,
                 source_exists=True,
                 unknown_fields=unknown_fields,
-                valid_fields=valid_fields
+                valid_fields=valid_fields,
             )
 
         except self.s3_client.exceptions.NoSuchKey:
@@ -564,20 +548,20 @@ class S3ConfigSource(ConfigurationSource):
                 source_path=key,
                 source_exists=False,
                 valid_fields=valid_fields,
-                error_message=f"S3 object not found: {key}"
+                error_message=f"S3 object not found: {key}",
             )
 
         except Exception as e:
             # Check if it's a ClientError for NoSuchKey (alternative exception path)
-            error_response = getattr(getattr(e, 'response', {}), 'get', lambda _x, _y: None)('Error', {})
-            error_code = error_response.get('Code', '') if error_response is not None else ''
-            if error_code == 'NoSuchKey' or 'NoSuchKey' in str(e) or '404' in str(e):
+            error_response = getattr(getattr(e, "response", {}), "get", lambda _x, _y: None)("Error", {})
+            error_code = error_response.get("Code", "") if error_response is not None else ""
+            if error_code == "NoSuchKey" or "NoSuchKey" in str(e) or "404" in str(e):
                 return ParseResult(
                     success=False,
                     source_path=key,
                     source_exists=False,
                     valid_fields=valid_fields,
-                    error_message=f"S3 object not found: {key}"
+                    error_message=f"S3 object not found: {key}",
                 )
 
             logger.error(f"Failed to load configuration from S3 key {key}: {e}", exc_info=True)
@@ -586,7 +570,7 @@ class S3ConfigSource(ConfigurationSource):
                 source_path=key,
                 source_exists=True,  # Assume exists if we got a different error
                 valid_fields=valid_fields,
-                error_message=str(e)
+                error_message=str(e),
             )
 
 
@@ -617,7 +601,8 @@ class DynamoDBConfigSource(ConfigurationSource):
         if self._dynamodb is None:
             try:
                 import boto3
-                self._dynamodb = boto3.resource('dynamodb', region_name=self.region)
+
+                self._dynamodb = boto3.resource("dynamodb", region_name=self.region)
             except ImportError:
                 raise ImportError("boto3 is required for DynamoDBConfigSource. Install with: pip install boto3")
         return self._dynamodb
@@ -636,10 +621,10 @@ class DynamoDBConfigSource(ConfigurationSource):
         try:
             response = self.table.scan()
 
-            for item in response.get('Items', []):
+            for item in response.get("Items", []):
                 try:
-                    category = item['category']
-                    api_major = item['api_major_version']
+                    category = item["category"]
+                    api_major = item["api_major_version"]
                     result_key = f"{category}:{api_major}"
                     parse_result = self._item_to_config(item, result_key)
                     self._parse_results[result_key] = parse_result
@@ -649,12 +634,12 @@ class DynamoDBConfigSource(ConfigurationSource):
                     logger.error(f"Failed to parse DynamoDB item: {e}")
 
             # Handle pagination
-            while 'LastEvaluatedKey' in response:
-                response = self.table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
-                for item in response.get('Items', []):
+            while "LastEvaluatedKey" in response:
+                response = self.table.scan(ExclusiveStartKey=response["LastEvaluatedKey"])
+                for item in response.get("Items", []):
                     try:
-                        category = item['category']
-                        api_major = item['api_major_version']
+                        category = item["category"]
+                        api_major = item["api_major_version"]
                         result_key = f"{category}:{api_major}"
                         parse_result = self._item_to_config(item, result_key)
                         self._parse_results[result_key] = parse_result
@@ -685,14 +670,9 @@ class DynamoDBConfigSource(ConfigurationSource):
         valid_fields = get_valid_stipulation_fields()
 
         try:
-            response = self.table.get_item(
-                Key={
-                    'category': category,
-                    'api_major_version': api_major_version
-                }
-            )
+            response = self.table.get_item(Key={"category": category, "api_major_version": api_major_version})
 
-            item = response.get('Item')
+            item = response.get("Item")
             if item:
                 parse_result = self._item_to_config(item, result_key)
                 self._parse_results[result_key] = parse_result
@@ -704,7 +684,7 @@ class DynamoDBConfigSource(ConfigurationSource):
                 source_path=result_key,
                 source_exists=False,
                 valid_fields=valid_fields,
-                error_message=f"No DynamoDB item found for {result_key}"
+                error_message=f"No DynamoDB item found for {result_key}",
             )
             return None
 
@@ -715,7 +695,7 @@ class DynamoDBConfigSource(ConfigurationSource):
                 source_path=result_key,
                 source_exists=False,  # Can't determine if exists when exception occurs
                 valid_fields=valid_fields,
-                error_message=str(e)
+                error_message=str(e),
             )
             return None
 
@@ -739,24 +719,24 @@ class DynamoDBConfigSource(ConfigurationSource):
     def save_stipulation(self, category: str, api_major_version: str, config: StipulationConfig) -> None:
         """Save a stipulation configuration to DynamoDB."""
         item = {
-            'category': category,
-            'api_major_version': api_major_version,
-            'stipulation_id': config.stipulation_id,
-            'stipulation_version': config.stipulation_version,
-            'exposure_policy': config.exposure_policy,
-            'proxy_prefix_format': config.proxy_prefix_format,
-            'requires_scope_parameter': config.requires_scope_parameter,
-            'forbid_methods': config.forbid_methods,
-            'required_fields': config.required_fields,
-            'require_openapi_major': config.require_openapi_major,
-            'inject_metadata': config.inject_metadata,
-            'metadata_block': config.metadata_block,
-            'catalog_default_visible': config.catalog_default_visible,
-            'extension_namespace': config.extension_namespace,
-            'enforce_version_alignment': config.enforce_version_alignment,
-            'created_at': datetime.now(timezone.utc).isoformat(),
-            'updated_at': datetime.now(timezone.utc).isoformat(),
-            'source': 'dynamodb'
+            "category": category,
+            "api_major_version": api_major_version,
+            "stipulation_id": config.stipulation_id,
+            "stipulation_version": config.stipulation_version,
+            "exposure_policy": config.exposure_policy,
+            "proxy_prefix_format": config.proxy_prefix_format,
+            "requires_scope_parameter": config.requires_scope_parameter,
+            "forbid_methods": config.forbid_methods,
+            "required_fields": config.required_fields,
+            "require_openapi_major": config.require_openapi_major,
+            "inject_metadata": config.inject_metadata,
+            "metadata_block": config.metadata_block,
+            "catalog_default_visible": config.catalog_default_visible,
+            "extension_namespace": config.extension_namespace,
+            "enforce_version_alignment": config.enforce_version_alignment,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "source": "dynamodb",
         }
 
         try:
@@ -769,12 +749,7 @@ class DynamoDBConfigSource(ConfigurationSource):
     def delete_stipulation(self, category: str, api_major_version: str) -> bool:
         """Delete a stipulation configuration from DynamoDB."""
         try:
-            self.table.delete_item(
-                Key={
-                    'category': category,
-                    'api_major_version': api_major_version
-                }
-            )
+            self.table.delete_item(Key={"category": category, "api_major_version": api_major_version})
             logger.info(f"Deleted stipulation {category}:{api_major_version} from DynamoDB")
             return True
         except Exception as e:
@@ -786,21 +761,18 @@ class DynamoDBConfigSource(ConfigurationSource):
         categories = set()
 
         try:
-            response = self.table.scan(
-                ProjectionExpression='category'
-            )
+            response = self.table.scan(ProjectionExpression="category")
 
-            for item in response.get('Items', []):
-                categories.add(item['category'])
+            for item in response.get("Items", []):
+                categories.add(item["category"])
 
             # Handle pagination
-            while 'LastEvaluatedKey' in response:
+            while "LastEvaluatedKey" in response:
                 response = self.table.scan(
-                    ProjectionExpression='category',
-                    ExclusiveStartKey=response['LastEvaluatedKey']
+                    ProjectionExpression="category", ExclusiveStartKey=response["LastEvaluatedKey"]
                 )
-                for item in response.get('Items', []):
-                    categories.add(item['category'])
+                for item in response.get("Items", []):
+                    categories.add(item["category"])
 
         except Exception as e:
             logger.error(f"Failed to list categories from DynamoDB: {e}")
@@ -813,13 +785,13 @@ class DynamoDBConfigSource(ConfigurationSource):
 
         try:
             response = self.table.query(
-                KeyConditionExpression='category = :category',
-                ExpressionAttributeValues={':category': category},
-                ProjectionExpression='api_major_version'
+                KeyConditionExpression="category = :category",
+                ExpressionAttributeValues={":category": category},
+                ProjectionExpression="api_major_version",
             )
 
-            for item in response.get('Items', []):
-                versions.add(item['api_major_version'])
+            for item in response.get("Items", []):
+                versions.add(item["api_major_version"])
 
         except Exception as e:
             logger.error(f"Failed to list versions for {category} from DynamoDB: {e}")
@@ -841,7 +813,7 @@ class DynamoDBConfigSource(ConfigurationSource):
             "table_name": self.table_name,
             "region": self.region,
             "available": False,
-            "last_checked": datetime.now(timezone.utc).isoformat()
+            "last_checked": datetime.now(timezone.utc).isoformat(),
         }
 
         try:
@@ -870,17 +842,18 @@ class DynamoDBConfigSource(ConfigurationSource):
 
         try:
             # Remove DynamoDB-specific fields before validation
-            config_data = {k: v for k, v in item.items()
-                          if k not in ['category', 'api_major_version', 'created_at', 'updated_at', 'source']}
+            config_data = {
+                k: v
+                for k, v in item.items()
+                if k not in ["category", "api_major_version", "created_at", "updated_at", "source"]
+            }
 
             # Use shared utility for field filtering
             filtered_data, unknown_fields = filter_unknown_fields(config_data)
 
             # Log warning for unknown fields using shared formatter
             if unknown_fields:
-                logger.warning(format_unknown_fields_warning(
-                    source_key, unknown_fields, valid_fields
-                ))
+                logger.warning(format_unknown_fields_warning(source_key, unknown_fields, valid_fields))
 
             config = StipulationConfig(**filtered_data)
 
@@ -890,7 +863,7 @@ class DynamoDBConfigSource(ConfigurationSource):
                 source_path=source_key,
                 source_exists=True,
                 unknown_fields=unknown_fields,
-                valid_fields=valid_fields
+                valid_fields=valid_fields,
             )
 
         except Exception as e:
@@ -900,5 +873,5 @@ class DynamoDBConfigSource(ConfigurationSource):
                 source_path=source_key,
                 source_exists=True,
                 valid_fields=valid_fields,
-                error_message=str(e)
+                error_message=str(e),
             )

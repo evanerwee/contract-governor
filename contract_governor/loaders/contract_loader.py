@@ -41,11 +41,11 @@ class ContractLoader:
         contract = RawContractRecord(
             category=category,
             api_major_version=version,
-            contract_version=spec.get('info', {}).get('version', '1.0.0'),
-            source_service=spec.get('info', {}).get('title', 'Unknown'),
+            contract_version=spec.get("info", {}).get("version", "1.0.0"),
+            source_service=spec.get("info", {}).get("title", "Unknown"),
             raw_openapi_spec=spec,
             contract_file_path=file_path,
-            received_at=datetime.now(timezone.utc)
+            received_at=datetime.now(timezone.utc),
         )
 
         # Find stipulation
@@ -56,8 +56,8 @@ class ContractLoader:
     def _load_spec_file(self, file_path: str) -> Dict[str, Any]:
         """Load OpenAPI spec from YAML or JSON file."""
         path = Path(file_path)
-        with open(path, 'r') as f:
-            if path.suffix in ['.yaml', '.yml']:
+        with open(path, "r") as f:
+            if path.suffix in [".yaml", ".yml"]:
                 # Safe: yaml.safe_load on a valid OpenAPI spec always produces a dict
                 return cast(Dict[str, Any], yaml.safe_load(f))
             else:

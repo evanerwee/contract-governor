@@ -24,8 +24,9 @@ class BaseTransformer(ABC):
     """
 
     @abstractmethod
-    def transform(self, contract: Dict[str, Any], context: TransformContext,
-                  stipulation: StipulationConfig) -> Dict[str, Any]:
+    def transform(
+        self, contract: Dict[str, Any], context: TransformContext, stipulation: StipulationConfig
+    ) -> Dict[str, Any]:
         """
         Transform the contract according to the stipulation and context.
 
@@ -39,8 +40,9 @@ class BaseTransformer(ABC):
         """
         pass
 
-    def preview_transformation(self, contract: Dict[str, Any], context: TransformContext,
-                             stipulation: StipulationConfig) -> Dict[str, Any]:
+    def preview_transformation(
+        self, contract: Dict[str, Any], context: TransformContext, stipulation: StipulationConfig
+    ) -> Dict[str, Any]:
         """
         Preview what this transformer would do without actually transforming.
 
@@ -64,8 +66,9 @@ class URLRewriter(BaseTransformer):
     Follows Single Responsibility Principle - only handles URL rewriting.
     """
 
-    def transform(self, contract: Dict[str, Any], context: TransformContext,
-                  stipulation: StipulationConfig) -> Dict[str, Any]:
+    def transform(
+        self, contract: Dict[str, Any], context: TransformContext, stipulation: StipulationConfig
+    ) -> Dict[str, Any]:
         """
         Rewrite server URLs using stipulation templates.
 
@@ -84,41 +87,36 @@ class URLRewriter(BaseTransformer):
             transformed["servers"] = UrlTemplateResolver.resolve_server_urls(stipulation.server_urls)
         else:
             # Fallback: build from gateway_base_url
-            transformed["servers"] = [{
-                "url": context.get_proxy_base_url(),
-                "description": f"API endpoint for {context.category}"
-            }]
+            transformed["servers"] = [
+                {"url": context.get_proxy_base_url(), "description": f"API endpoint for {context.category}"}
+            ]
 
         return transformed
 
-
-    def preview_transformation(self, contract: Dict[str, Any], context: TransformContext,
-                             stipulation: StipulationConfig) -> Dict[str, Any]:
+    def preview_transformation(
+        self, contract: Dict[str, Any], context: TransformContext, stipulation: StipulationConfig
+    ) -> Dict[str, Any]:
         """Preview the URL rewriting transformation."""
         current_servers = contract.get("servers", [])
 
         if stipulation.server_urls:
             try:
                 new_servers = UrlTemplateResolver.resolve_server_urls(stipulation.server_urls)
-                server_urls = [s['url'] for s in new_servers]
+                server_urls = [s["url"] for s in new_servers]
 
                 return {
                     "transformer": "URLRewriter",
                     "current_servers": current_servers,
                     "new_servers": new_servers,
-                    "changes": f"Will replace {len(current_servers)} server(s) with {len(new_servers)} URL(s): {', '.join(server_urls)}"
+                    "changes": f"Will replace {len(current_servers)} server(s) with {len(new_servers)} URL(s): {', '.join(server_urls)}",
                 }
             except Exception as e:
-                return {
-                    "transformer": "URLRewriter",
-                    "error": str(e),
-                    "changes": f"Error resolving URLs: {str(e)}"
-                }
+                return {"transformer": "URLRewriter", "error": str(e), "changes": f"Error resolving URLs: {str(e)}"}
         else:
             return {
                 "transformer": "URLRewriter",
                 "current_servers": current_servers,
-                "changes": "Will use gateway_base_url as fallback"
+                "changes": "Will use gateway_base_url as fallback",
             }
 
 
@@ -130,8 +128,9 @@ class MethodStripper(BaseTransformer):
     forbid_methods configuration, ensuring only allowed methods are exposed.
     """
 
-    def transform(self, contract: Dict[str, Any], context: TransformContext,
-                  stipulation: StipulationConfig) -> Dict[str, Any]:
+    def transform(
+        self, contract: Dict[str, Any], context: TransformContext, stipulation: StipulationConfig
+    ) -> Dict[str, Any]:
         """
         Remove forbidden HTTP methods from all paths in the contract.
 
@@ -167,8 +166,9 @@ class MethodStripper(BaseTransformer):
 
         return transformed
 
-    def preview_transformation(self, contract: Dict[str, Any], context: TransformContext,
-                             stipulation: StipulationConfig) -> Dict[str, Any]:
+    def preview_transformation(
+        self, contract: Dict[str, Any], context: TransformContext, stipulation: StipulationConfig
+    ) -> Dict[str, Any]:
         """Preview the method stripping transformation."""
         forbidden_methods = [method.lower() for method in stipulation.forbid_methods]
         methods_to_remove = []
@@ -184,7 +184,11 @@ class MethodStripper(BaseTransformer):
             "transformer": "MethodStripper",
             "forbidden_methods": stipulation.forbid_methods,
             "methods_to_remove": methods_to_remove,
-            "changes": f"Will remove {len(methods_to_remove)} forbidden method(s)" if methods_to_remove else "No forbidden methods found"
+            "changes": (
+                f"Will remove {len(methods_to_remove)} forbidden method(s)"
+                if methods_to_remove
+                else "No forbidden methods found"
+            ),
         }
 
 
@@ -196,8 +200,9 @@ class AuditMetadataInjector(BaseTransformer):
     to provide governance tracking and compliance information.
     """
 
-    def transform(self, contract: Dict[str, Any], context: TransformContext,
-                  stipulation: StipulationConfig) -> Dict[str, Any]:
+    def transform(
+        self, contract: Dict[str, Any], context: TransformContext, stipulation: StipulationConfig
+    ) -> Dict[str, Any]:
         """
         Inject comprehensive audit metadata into the contract under the extension namespace.
 
@@ -265,7 +270,7 @@ class AuditMetadataInjector(BaseTransformer):
             audit_note=stipulation.metadata_block.get("audit_note", "Contract governed by stipulations"),
             compliance_status="compliant",
             governance_version="1.0.0",
-            access_level=context.target_audience
+            access_level=context.target_audience,
         )
 
         # Add tenant scope if applicable
@@ -283,14 +288,12 @@ class AuditMetadataInjector(BaseTransformer):
 
         return audit_metadata
 
-    def preview_transformation(self, contract: Dict[str, Any], context: TransformContext,
-                             stipulation: StipulationConfig) -> Dict[str, Any]:
+    def preview_transformation(
+        self, contract: Dict[str, Any], context: TransformContext, stipulation: StipulationConfig
+    ) -> Dict[str, Any]:
         """Preview the comprehensive audit metadata injection transformation."""
         if not stipulation.inject_metadata:
-            return {
-                "transformer": "AuditMetadataInjector",
-                "changes": "Metadata injection is disabled"
-            }
+            return {"transformer": "AuditMetadataInjector", "changes": "Metadata injection is disabled"}
 
         metadata_builder = GovernanceMetadataBuilder(stipulation, context)
         comprehensive_audit_block = metadata_builder.build_comprehensive_audit_block()
@@ -303,7 +306,7 @@ class AuditMetadataInjector(BaseTransformer):
             "stipulation_hash": stipulation_hash,
             "governance_framework": comprehensive_audit_block.get("governance_framework", {}),
             "audit_integrity": comprehensive_audit_block.get("audit_integrity", {}),
-            "changes": f"Will inject comprehensive audit metadata under {stipulation.extension_namespace}"
+            "changes": f"Will inject comprehensive audit metadata under {stipulation.extension_namespace}",
         }
 
 
@@ -315,8 +318,9 @@ class SecurityEnforcer(BaseTransformer):
     and ensure security best practices are applied to exposed contracts.
     """
 
-    def transform(self, contract: Dict[str, Any], context: TransformContext,
-                  stipulation: StipulationConfig) -> Dict[str, Any]:
+    def transform(
+        self, contract: Dict[str, Any], context: TransformContext, stipulation: StipulationConfig
+    ) -> Dict[str, Any]:
         """
         Apply security transformations to the contract.
 
@@ -344,7 +348,7 @@ class SecurityEnforcer(BaseTransformer):
                 "type": "http",
                 "scheme": "bearer",
                 "bearerFormat": "JWT",
-                "description": "Bearer token authentication required for tenant-scoped access"
+                "description": "Bearer token authentication required for tenant-scoped access",
             }
 
             # Add security requirement to all operations if not present
@@ -353,8 +357,9 @@ class SecurityEnforcer(BaseTransformer):
 
         return transformed
 
-    def preview_transformation(self, contract: Dict[str, Any], context: TransformContext,
-                             stipulation: StipulationConfig) -> Dict[str, Any]:
+    def preview_transformation(
+        self, contract: Dict[str, Any], context: TransformContext, stipulation: StipulationConfig
+    ) -> Dict[str, Any]:
         """Preview the security enforcement transformation."""
         changes = []
 
@@ -369,5 +374,5 @@ class SecurityEnforcer(BaseTransformer):
         return {
             "transformer": "SecurityEnforcer",
             "exposure_policy": stipulation.exposure_policy.value,
-            "changes": "; ".join(changes) if changes else "No security changes needed"
+            "changes": "; ".join(changes) if changes else "No security changes needed",
         }

@@ -9,10 +9,4 @@ dataplane registration.
 from .entitlement_generator import EntitlementGenerator
 from .models import ActionType, EntitlementManifest, OperationEntitlement, SpiceDBRelationship
 
-__all__ = [
-    "EntitlementGenerator",
-    "EntitlementManifest",
-    "OperationEntitlement",
-    "SpiceDBRelationship",
-    "ActionType"
-]
+__all__ = ["EntitlementGenerator", "EntitlementManifest", "OperationEntitlement", "SpiceDBRelationship", "ActionType"]

@@ -53,7 +53,7 @@ class ContractGovernor:
         stipulations: Dict[str, StipulationConfig],
         api_catalog: Optional[Dict[str, Any]] = None,
         implementation_registry: Optional[Any] = None,
-        config_source: Optional[Any] = None
+        config_source: Optional[Any] = None,
     ):
         """
         Initialize the Contract Governor.
@@ -66,6 +66,7 @@ class ContractGovernor:
             config_source: Optional configuration source for retrieving parse results
         """
         import logging
+
         logger = logging.getLogger(__name__)
 
         self.registry = registry
@@ -106,7 +107,7 @@ class ContractGovernor:
         contract_file_path: str,
         service_version: Optional[str] = None,
         environment: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> RawContractRecord:
         """
         Ingest a raw contract from a backend service - stores as RawContractRecord only.
@@ -141,7 +142,7 @@ class ContractGovernor:
             received_at=datetime.now(timezone.utc),
             service_version=service_version,
             environment=environment,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         # Store the raw contract
@@ -157,7 +158,7 @@ class ContractGovernor:
         gateway_base_url: str,
         scope_parameters: Optional[Dict[str, str]] = None,
         target_audience: str = "public",
-        metadata_overrides: Optional[Dict[str, Any]] = None
+        metadata_overrides: Optional[Dict[str, Any]] = None,
     ) -> ExposedContractRecord:
         """
         Transform raw contract into exposed contract - the ONLY way contracts become public.
@@ -186,19 +187,18 @@ class ContractGovernor:
             service_name="contract_stipulations",
             contract_category=category,
             api_major_version=api_major,
-            operation="expose_contract"
+            operation="expose_contract",
         )
 
         # Get all raw contracts for this category:api_major
         all_raw_contracts = self.registry.list_raw_contracts()
-        matching_contracts = [c for c in all_raw_contracts if c.category == category and c.api_major_version == api_major]
+        matching_contracts = [
+            c for c in all_raw_contracts if c.category == category and c.api_major_version == api_major
+        ]
 
         if not matching_contracts:
             raise ContractNotFoundError(
-                category=category,
-                api_major_version=api_major,
-                contract_type="raw",
-                context=error_context
+                category=category, api_major_version=api_major, contract_type="raw", context=error_context
             )
 
         # Use the first matching contract (or implement selection logic)
@@ -214,7 +214,7 @@ class ContractGovernor:
                 operation="get_stipulation",
                 contract_key=f"{category}:{api_major}",
                 context=error_context,
-                cause=e
+                cause=e,
             )
 
         # Validate the contract against the stipulation
@@ -233,7 +233,7 @@ class ContractGovernor:
             target_audience=target_audience,
             metadata_overrides=metadata_overrides or {},
             source_service=raw_record.source_service,
-            environment=raw_record.environment
+            environment=raw_record.environment,
         )
 
         # Transform the contract
@@ -246,7 +246,7 @@ class ContractGovernor:
                 transformation_stage="contract_transformation",
                 original_contract=raw_record.raw_openapi_spec,
                 context=error_context,
-                cause=e
+                cause=e,
             )
 
         # Create audit metadata
@@ -258,7 +258,7 @@ class ContractGovernor:
                 error_code="AUDIT_METADATA_CREATION_FAILED",
                 transformation_stage="audit_metadata_creation",
                 context=error_context,
-                cause=e
+                cause=e,
             )
 
         # Build proxy prefix
@@ -270,7 +270,7 @@ class ContractGovernor:
                 error_code="PROXY_PREFIX_BUILD_FAILED",
                 transformation_stage="proxy_prefix_building",
                 context=error_context,
-                cause=e
+                cause=e,
             )
 
         # Create exposed contract record
@@ -286,7 +286,7 @@ class ContractGovernor:
             stipulation_hash=stipulation.get_stipulation_hash(),
             exposed_at=datetime.now(timezone.utc),
             audit_metadata=audit_metadata.to_dict(),
-            catalog_visible=stipulation.catalog_default_visible
+            catalog_visible=stipulation.catalog_default_visible,
         )
 
         # Store the exposed contract
@@ -305,8 +305,8 @@ class ContractGovernor:
                     "source_service": raw_record.source_service,
                     "contract_version": raw_record.contract_version,
                     "proxy_prefix": proxy_prefix,
-                    "target_audience": target_audience
-                }
+                    "target_audience": target_audience,
+                },
             )
 
         return exposed_record
@@ -371,7 +371,7 @@ class ContractGovernor:
         gateway_base_url: str,
         scope_parameters: Optional[Dict[str, str]] = None,
         target_audience: str = "public",
-        metadata_overrides: Optional[Dict[str, Any]] = None
+        metadata_overrides: Optional[Dict[str, Any]] = None,
     ) -> Optional[ExposedContractRecord]:
         """
         Refresh an exposed contract by re-validating and re-transforming the raw contract.
@@ -399,14 +399,17 @@ class ContractGovernor:
 
         # Re-expose the contract
         # Safe: expose_contract always returns ExposedContractRecord; Any is due to untyped decorator
-        return cast(ExposedContractRecord, self.expose_contract(
-            category=category,
-            api_major=api_major,
-            gateway_base_url=gateway_base_url,
-            scope_parameters=scope_parameters,
-            target_audience=target_audience,
-            metadata_overrides=metadata_overrides
-        ))
+        return cast(
+            ExposedContractRecord,
+            self.expose_contract(
+                category=category,
+                api_major=api_major,
+                gateway_base_url=gateway_base_url,
+                scope_parameters=scope_parameters,
+                target_audience=target_audience,
+                metadata_overrides=metadata_overrides,
+            ),
+        )
 
     def get_governance_status(self, category: str, api_major: str) -> Dict[str, Any]:
         """
@@ -434,14 +437,14 @@ class ContractGovernor:
             "has_raw_contract": raw_contract is not None,
             "has_exposed_contract": exposed_contract is not None,
             "has_stipulation": stipulation is not None,
-            "governance_complete": all([raw_contract, exposed_contract, stipulation])
+            "governance_complete": all([raw_contract, exposed_contract, stipulation]),
         }
 
         if raw_contract:
             status["raw_contract_info"] = {
                 "source_service": raw_contract.source_service,
                 "contract_version": raw_contract.contract_version,
-                "received_at": raw_contract.received_at.isoformat()
+                "received_at": raw_contract.received_at.isoformat(),
             }
 
         if exposed_contract:
@@ -449,14 +452,14 @@ class ContractGovernor:
                 "stipulation_applied": exposed_contract.stipulation_applied,
                 "exposed_at": exposed_contract.exposed_at.isoformat(),
                 "catalog_visible": exposed_contract.catalog_visible,
-                "proxy_prefix": exposed_contract.proxy_prefix
+                "proxy_prefix": exposed_contract.proxy_prefix,
             }
 
         if stipulation:
             status["stipulation_info"] = {
                 "stipulation_id": stipulation.stipulation_id,
                 "exposure_policy": stipulation.exposure_policy.value,
-                "requires_scope_parameter": stipulation.requires_scope_parameter
+                "requires_scope_parameter": stipulation.requires_scope_parameter,
             }
 
         return status
@@ -505,28 +508,23 @@ class ContractGovernor:
                     category=category,
                     api_major_version=api_major,
                     source_path=parse_info.source_path,
-                    parse_error=parse_info.error_message
+                    parse_error=parse_info.error_message,
                 )
             elif parse_info.had_unknown_fields:
                 raise StipulationParseError(
                     category=category,
                     api_major_version=api_major,
                     source_path=parse_info.source_path,
-                    unknown_fields=parse_info.unknown_fields
+                    unknown_fields=parse_info.unknown_fields,
                 )
             else:
                 # File exists but no config was produced for unknown reason
                 raise StipulationParseError(
-                    category=category,
-                    api_major_version=api_major,
-                    source_path=parse_info.source_path
+                    category=category, api_major_version=api_major, source_path=parse_info.source_path
                 )
 
         # No stipulation file exists
-        raise StipulationNotFoundError(
-            category=category,
-            api_major_version=api_major
-        )
+        raise StipulationNotFoundError(category=category, api_major_version=api_major)
 
     def _get_stipulation_parse_info(self, category: str, api_major: str) -> Optional[ParseResult]:
         """
@@ -551,7 +549,7 @@ class ContractGovernor:
             return self._parse_results[key]
 
         # Try to get from config source if available
-        if self.config_source and hasattr(self.config_source, 'get_parse_result'):
+        if self.config_source and hasattr(self.config_source, "get_parse_result"):
             parse_result = self.config_source.get_parse_result(category, api_major)
             if parse_result:
                 self._parse_results[key] = parse_result
@@ -597,6 +595,7 @@ class ContractGovernor:
             Dictionary with module_path and class_name, or None if not found
         """
         import logging
+
         logger = logging.getLogger(__name__)
 
         if not self.api_catalog:
@@ -611,10 +610,7 @@ class ContractGovernor:
         if category in category_index:
             impl = category_index[category]
             logger.info(f"✅ Category index match! '{category}' → {impl['class_name']} (AUTHORITATIVE)")
-            return {
-                "module_path": impl["module_path"],
-                "class_name": impl["class_name"]
-            }
+            return {"module_path": impl["module_path"], "class_name": impl["class_name"]}
 
         # PRIORITY 2: Fallback to entries lookup with string manipulation (LEGACY)
         logger.debug(f"Category '{category}' not in category_index, trying entries lookup...")
@@ -622,7 +618,7 @@ class ContractGovernor:
         logger.debug(f"Catalog has {len(entries)} entries. Looking for category: {category}")
 
         # Extract the main part after last hyphen
-        parts = category.split('-')
+        parts = category.split("-")
         main_part = parts[-1]
 
         # Build lookup keys with proper capitalization
@@ -640,15 +636,16 @@ class ContractGovernor:
             if key in entries:
                 entry = entries[key]
                 entry_category = entry.get("category", "").lower()
-                logger.debug(f"Found key '{key}' in catalog. Entry category: '{entry_category}', Looking for: '{category}'")
-                if (entry_category == category.lower() or
-                    main_part.lower() in entry_category or
-                    entry_category in category.lower()):
+                logger.debug(
+                    f"Found key '{key}' in catalog. Entry category: '{entry_category}', Looking for: '{category}'"
+                )
+                if (
+                    entry_category == category.lower()
+                    or main_part.lower() in entry_category
+                    or entry_category in category.lower()
+                ):
                     logger.info(f"✅ Catalog match! Category '{category}' → {entry['class_name']} (fallback)")
-                    return {
-                        "module_path": entry["module_path"],
-                        "class_name": entry["class_name"]
-                    }
+                    return {"module_path": entry["module_path"], "class_name": entry["class_name"]}
                 else:
                     logger.debug(f"Key '{key}' found but category mismatch: '{entry_category}' vs '{category}'")
 
@@ -657,13 +654,11 @@ class ContractGovernor:
 
     def _extract_versions(self, contract: Dict[str, Any], api_major: str) -> VersionInfo:
         """Extract version information from an OpenAPI contract."""
-        openapi_version = contract.get('openapi', '')
-        contract_version = contract.get('info', {}).get('version', '1.0.0')
+        openapi_version = contract.get("openapi", "")
+        contract_version = contract.get("info", {}).get("version", "1.0.0")
 
         return VersionInfo(
-            api_major_version=api_major,
-            contract_version=contract_version,
-            openapi_version=openapi_version
+            api_major_version=api_major, contract_version=contract_version, openapi_version=openapi_version
         )
 
     def _validate_contract(self, contract: Dict[str, Any], stipulation: StipulationConfig) -> ValidationResult:
@@ -672,20 +667,14 @@ class ContractGovernor:
         return pipeline.validate(contract)
 
     def _transform_contract(
-        self,
-        contract: Dict[str, Any],
-        stipulation: StipulationConfig,
-        context: TransformContext
+        self, contract: Dict[str, Any], stipulation: StipulationConfig, context: TransformContext
     ) -> Dict[str, Any]:
         """Transform a contract according to stipulation policies."""
         pipeline = TransformationPipeline(stipulation)
         return pipeline.transform(contract, context)
 
     def _create_audit_metadata(
-        self,
-        stipulation: StipulationConfig,
-        context: TransformContext,
-        raw_record: RawContractRecord
+        self, stipulation: StipulationConfig, context: TransformContext, raw_record: RawContractRecord
     ) -> AuditMetadata:
         """Create comprehensive audit metadata for governance tracking."""
         return AuditMetadata(
@@ -704,16 +693,16 @@ class ContractGovernor:
                 **context.metadata_overrides,
                 "source_service": raw_record.source_service,
                 "environment": raw_record.environment,
-                "original_file_path": raw_record.contract_file_path
-            }
+                "original_file_path": raw_record.contract_file_path,
+            },
         )
 
     def _build_proxy_prefix(self, stipulation: StipulationConfig, context: TransformContext) -> str:
         """Build the proxy URL prefix from stipulation configuration."""
-        if hasattr(stipulation, 'proxy_prefix_format') and stipulation.proxy_prefix_format:
+        if hasattr(stipulation, "proxy_prefix_format") and stipulation.proxy_prefix_format:
             prefix = stipulation.proxy_prefix_format
             # Ensure prefix starts with '/' as required by validation
-            return prefix if prefix.startswith('/') else f'/{prefix}'
+            return prefix if prefix.startswith("/") else f"/{prefix}"
 
         # Fallback to category/version format
         return f"/{context.category}/{context.api_major_version}"
@@ -749,17 +738,19 @@ class ContractGovernor:
                     "stipulation_id": stip.stipulation_id,
                     "exposure_policy": stip.exposure_policy,
                     "proxy_prefix_format": stip.proxy_prefix_format,
-                    "requires_scope_parameter": stip.requires_scope_parameter
+                    "requires_scope_parameter": stip.requires_scope_parameter,
                 }
                 for key, stip in self.stipulations.items()
-            }
+            },
         }
 
     def get_contract_processing_details(self, category: str, api_major: str) -> Dict[str, Any]:
         """Get detailed processing information for a specific contract."""
         raw_contract = self.registry.get_raw_contract(category, api_major)
         exposed_contract = self.registry.get_exposed_contract(category, api_major)
-        stipulation = self._get_stipulation(category, api_major) if f"{category}:{api_major}" in self.stipulations else None
+        stipulation = (
+            self._get_stipulation(category, api_major) if f"{category}:{api_major}" in self.stipulations else None
+        )
 
         details = {
             "category": category,
@@ -768,8 +759,8 @@ class ContractGovernor:
                 "has_raw": raw_contract is not None,
                 "has_exposed": exposed_contract is not None,
                 "has_stipulation": stipulation is not None,
-                "fully_processed": all([raw_contract, exposed_contract, stipulation])
-            }
+                "fully_processed": all([raw_contract, exposed_contract, stipulation]),
+            },
         }
 
         if raw_contract:
@@ -786,7 +777,7 @@ class ContractGovernor:
                 "proxy_prefix_format": stipulation.proxy_prefix_format,
                 "requires_scope_parameter": stipulation.requires_scope_parameter,
                 "catalog_default_visible": stipulation.catalog_default_visible,
-                "stipulation_hash": stipulation.get_stipulation_hash()
+                "stipulation_hash": stipulation.get_stipulation_hash(),
             }
 
         return details

@@ -31,7 +31,7 @@ class FlaskCatalogServer(CatalogServer):
         catalog_provider: CatalogProvider,
         contract_provider: ContractProvider,
         health_provider: HealthProvider,
-        documentation_renderer: Optional[DocumentationRenderer] = None
+        documentation_renderer: Optional[DocumentationRenderer] = None,
     ):
         """
         Initialize Flask catalog server with injected dependencies.
@@ -50,21 +50,21 @@ class FlaskCatalogServer(CatalogServer):
         self.documentation_renderer = documentation_renderer
 
         # Create blueprint for catalog endpoints
-        self.catalog_bp = Blueprint('catalog', __name__)
-        self.contracts_bp = Blueprint('contracts', __name__)
-        self.health_bp = Blueprint('health', __name__)
+        self.catalog_bp = Blueprint("catalog", __name__)
+        self.contracts_bp = Blueprint("contracts", __name__)
+        self.health_bp = Blueprint("health", __name__)
 
     def register_catalog_endpoint(self, path: str = "/api-catalog", handler: Callable[..., Any] | None = None) -> None:
         """Register Flask route for API catalog."""
 
-        @self.catalog_bp.route(path, methods=['GET'])
+        @self.catalog_bp.route(path, methods=["GET"])
         def get_api_catalog():
             """Get API catalog with optional filtering."""
             try:
                 # Extract query parameters
-                api_major = request.args.get('api_major')
-                category = request.args.get('category')
-                visible_only = request.args.get('visible_only', 'true').lower() == 'true'
+                api_major = request.args.get("api_major")
+                category = request.args.get("category")
+                visible_only = request.args.get("visible_only", "true").lower() == "true"
 
                 # Build filters
                 filters = {}
@@ -84,12 +84,8 @@ class FlaskCatalogServer(CatalogServer):
                 catalog_response = {
                     "contracts": [self._contract_to_summary(contract) for contract in contracts],
                     "total": len(contracts),
-                    "filters": {
-                        "api_major": api_major,
-                        "category": category,
-                        "visible_only": visible_only
-                    },
-                    "generated_at": datetime.now(timezone.utc).isoformat()
+                    "filters": {"api_major": api_major, "category": category, "visible_only": visible_only},
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
                 }
 
                 return jsonify(catalog_response)
@@ -99,7 +95,8 @@ class FlaskCatalogServer(CatalogServer):
 
         # Documentation endpoint
         if self.documentation_renderer:
-            @self.catalog_bp.route(f"{path}/docs", methods=['GET'])
+
+            @self.catalog_bp.route(f"{path}/docs", methods=["GET"])
             def get_catalog_docs():
                 """Get catalog documentation page."""
                 try:
@@ -109,7 +106,7 @@ class FlaskCatalogServer(CatalogServer):
                     contract_summaries = [self._contract_to_summary(c) for c in visible_contracts]
                     html_content = self.documentation_renderer.render_catalog_page(contract_summaries)
 
-                    return Response(html_content, mimetype='text/html')
+                    return Response(html_content, mimetype="text/html")
 
                 except Exception as e:
                     return jsonify({"error": f"Failed to render catalog docs: {str(e)}"}), 500
@@ -117,10 +114,12 @@ class FlaskCatalogServer(CatalogServer):
         # Register blueprint
         self.app.register_blueprint(self.catalog_bp)
 
-    def register_contract_endpoint(self, path: str = "/contracts/<category>/<api_major>", handler: Callable[..., Any] | None = None) -> None:
+    def register_contract_endpoint(
+        self, path: str = "/contracts/<category>/<api_major>", handler: Callable[..., Any] | None = None
+    ) -> None:
         """Register Flask routes for individual contracts."""
 
-        @self.contracts_bp.route(f"{path}/openapi.json", methods=['GET'])
+        @self.contracts_bp.route(f"{path}/openapi.json", methods=["GET"])
         def get_contract_spec(category: str, api_major: str):
             """Get OpenAPI specification for a specific contract."""
             try:
@@ -136,7 +135,7 @@ class FlaskCatalogServer(CatalogServer):
             except Exception as e:
                 return jsonify({"error": f"Failed to retrieve contract: {str(e)}"}), 500
 
-        @self.contracts_bp.route(f"{path}/metadata", methods=['GET'])
+        @self.contracts_bp.route(f"{path}/metadata", methods=["GET"])
         def get_contract_metadata(category: str, api_major: str):
             """Get metadata for a specific contract."""
             try:
@@ -151,7 +150,8 @@ class FlaskCatalogServer(CatalogServer):
 
         # Documentation endpoint
         if self.documentation_renderer:
-            @self.contracts_bp.route(f"{path}/docs", methods=['GET'])
+
+            @self.contracts_bp.route(f"{path}/docs", methods=["GET"])
             def get_contract_docs(category: str, api_major: str):
                 """Get documentation page for a specific contract."""
                 try:
@@ -159,6 +159,7 @@ class FlaskCatalogServer(CatalogServer):
                         return jsonify({"error": f"Contract not found: {category}:{api_major}"}), 404
 
                     from html import escape as html_escape
+
                     safe_category = html_escape(category)
                     safe_api_major = html_escape(api_major)
                     contract_url = f"/contracts/{safe_category}/{safe_api_major}/openapi.json"
@@ -167,7 +168,7 @@ class FlaskCatalogServer(CatalogServer):
                     if self.documentation_renderer is None:
                         return jsonify({"error": "Documentation renderer not available"}), 500
                     html_content = self.documentation_renderer.render_contract_page(contract_url, title)
-                    return Response(html_content, mimetype='text/html')
+                    return Response(html_content, mimetype="text/html")
 
                 except Exception as e:
                     return jsonify({"error": f"Failed to render contract docs: {str(e)}"}), 500
@@ -178,7 +179,7 @@ class FlaskCatalogServer(CatalogServer):
     def serve_openapi_spec(self, spec: dict, path: str) -> None:
         """Serve an OpenAPI specification at a custom path."""
 
-        @self.app.route(path, methods=['GET'])
+        @self.app.route(path, methods=["GET"])
         def serve_custom_spec():
             """Serve custom OpenAPI specification."""
             return jsonify(spec)
@@ -186,7 +187,7 @@ class FlaskCatalogServer(CatalogServer):
     def register_health_endpoints(self) -> None:
         """Register health check endpoints."""
 
-        @self.health_bp.route("/health", methods=['GET'])
+        @self.health_bp.route("/health", methods=["GET"])
         def health_check():
             """Liveness probe."""
             try:
@@ -196,7 +197,7 @@ class FlaskCatalogServer(CatalogServer):
             except Exception as e:
                 return jsonify({"status": "unhealthy", "error": str(e)}), 503
 
-        @self.health_bp.route("/ready", methods=['GET'])
+        @self.health_bp.route("/ready", methods=["GET"])
         def readiness_check():
             """Readiness probe."""
             try:
@@ -206,7 +207,7 @@ class FlaskCatalogServer(CatalogServer):
             except Exception as e:
                 return jsonify({"status": "not_ready", "error": str(e)}), 503
 
-        @self.health_bp.route("/info", methods=['GET'])
+        @self.health_bp.route("/info", methods=["GET"])
         def service_info():
             """Service information endpoint."""
             try:
@@ -234,7 +235,7 @@ class FlaskCatalogServer(CatalogServer):
             "proxy_prefix": contract.proxy_prefix,
             "source_service": contract.source_service,
             "exposed_at": contract.exposed_at.isoformat() if contract.exposed_at else None,
-            "stipulation_applied": contract.stipulation_applied
+            "stipulation_applied": contract.stipulation_applied,
         }
 
 
@@ -247,7 +248,7 @@ class FlaskAppFactory:
         contract_provider: ContractProvider,
         health_provider: HealthProvider,
         documentation_renderer: Optional[DocumentationRenderer] = None,
-        app_name: str = "catalog_app"
+        app_name: str = "catalog_app",
     ) -> Flask:
         """
         Create a Flask application configured for catalog serving.
@@ -270,7 +271,7 @@ class FlaskAppFactory:
             catalog_provider=catalog_provider,
             contract_provider=contract_provider,
             health_provider=health_provider,
-            documentation_renderer=documentation_renderer
+            documentation_renderer=documentation_renderer,
         )
 
         # Register all endpoints

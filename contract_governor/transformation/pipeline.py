@@ -38,9 +38,9 @@ class TransformationPipeline:
     def _setup_default_transformers(self) -> None:
         """Set up the default chain of transformers."""
         self.transformers = [
-            URLRewriter(),           # Rewrite internal URLs to proxy URLs
-            MethodStripper(),        # Remove forbidden HTTP methods
-            AuditMetadataInjector(), # Inject governance and audit metadata
+            URLRewriter(),  # Rewrite internal URLs to proxy URLs
+            MethodStripper(),  # Remove forbidden HTTP methods
+            AuditMetadataInjector(),  # Inject governance and audit metadata
         ]
 
     def add_transformer(self, transformer: BaseTransformer) -> None:
@@ -94,7 +94,7 @@ class TransformationPipeline:
             operation_type=OperationType.TRANSFORMATION,
             contract_category=context.category,
             api_major_version=context.api_major_version,
-            stipulation_id=self.stipulation.stipulation_id
+            stipulation_id=self.stipulation.stipulation_id,
         ):
             # Create a deep copy to avoid modifying the original contract
             transformed_contract = copy.deepcopy(contract)
@@ -110,11 +110,7 @@ class TransformationPipeline:
             transformers_applied = 0
             for transformer in self.transformers:
                 try:
-                    transformed_contract = transformer.transform(
-                        transformed_contract,
-                        context,
-                        self.stipulation
-                    )
+                    transformed_contract = transformer.transform(transformed_contract, context, self.stipulation)
                     transformers_applied += 1
 
                     # Validate that transformer returned a valid contract
@@ -123,9 +119,7 @@ class TransformationPipeline:
 
                 except Exception as e:
                     # Handle transformer exceptions
-                    raise RuntimeError(
-                        f"Transformer {transformer.__class__.__name__} failed: {str(e)}"
-                    ) from e
+                    raise RuntimeError(f"Transformer {transformer.__class__.__name__} failed: {str(e)}") from e
 
             # Record transformation metadata
             transformation_duration_ms = int((time.time() - start_time) * 1000)
@@ -137,16 +131,16 @@ class TransformationPipeline:
                 stipulation_id=self.stipulation.stipulation_id,
                 transformation_duration=transformation_duration_ms / 1000.0,
                 transformers_applied=transformers_applied,
-                success=True
+                success=True,
             )
 
             # Add transformation metadata to the contract if not already present
-            if 'x-transformation-metadata' not in transformed_contract:
-                transformed_contract['x-transformation-metadata'] = {
-                    'stipulation_id': self.stipulation.stipulation_id,
-                    'transformation_duration_ms': transformation_duration_ms,
-                    'transformers_applied': [t.__class__.__name__ for t in self.transformers],
-                    'transformation_timestamp': datetime.now(timezone.utc).isoformat()
+            if "x-transformation-metadata" not in transformed_contract:
+                transformed_contract["x-transformation-metadata"] = {
+                    "stipulation_id": self.stipulation.stipulation_id,
+                    "transformation_duration_ms": transformation_duration_ms,
+                    "transformers_applied": [t.__class__.__name__ for t in self.transformers],
+                    "transformation_timestamp": datetime.now(timezone.utc).isoformat(),
                 }
 
             return transformed_contract
@@ -161,8 +155,10 @@ class TransformationPipeline:
         return [
             {
                 "name": transformer.__class__.__name__,
-                "description": getattr(transformer, "__doc__", "").strip().split('\n')[0] if transformer.__doc__ else "",
-                "module": transformer.__class__.__module__
+                "description": (
+                    getattr(transformer, "__doc__", "").strip().split("\n")[0] if transformer.__doc__ else ""
+                ),
+                "module": transformer.__class__.__module__,
             }
             for transformer in self.transformers
         ]
@@ -214,17 +210,14 @@ class TransformationPipeline:
         preview: Dict[str, Any] = {
             "stipulation_id": self.stipulation.stipulation_id,
             "transformers": [],
-            "estimated_changes": {}
+            "estimated_changes": {},
         }
 
         # Get preview from each transformer
         for transformer in self.transformers:
-            if hasattr(transformer, 'preview_transformation'):
+            if hasattr(transformer, "preview_transformation"):
                 transformer_preview = transformer.preview_transformation(contract, context, self.stipulation)
-                preview["transformers"].append({
-                    "name": transformer.__class__.__name__,
-                    "preview": transformer_preview
-                })
+                preview["transformers"].append({"name": transformer.__class__.__name__, "preview": transformer_preview})
 
         # Estimate overall changes
         if "servers" in contract:
@@ -243,6 +236,8 @@ class TransformationPipeline:
                 preview["estimated_changes"]["forbidden_methods"] = f"Will remove: {', '.join(methods_to_remove)}"
 
         if self.stipulation.inject_metadata:
-            preview["estimated_changes"]["metadata"] = f"Will inject audit metadata under {self.stipulation.extension_namespace}"
+            preview["estimated_changes"][
+                "metadata"
+            ] = f"Will inject audit metadata under {self.stipulation.extension_namespace}"
 
         return preview

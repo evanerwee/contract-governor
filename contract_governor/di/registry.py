@@ -13,6 +13,7 @@ from typing import Any, Callable, Dict, List, Optional, Type
 
 class ServiceStatus(Enum):
     """Service status enumeration."""
+
     REGISTERED = "registered"
     ACTIVE = "active"
     INACTIVE = "inactive"
@@ -22,6 +23,7 @@ class ServiceStatus(Enum):
 @dataclass
 class ServiceRegistration:
     """Service registration information."""
+
     interface: Type
     implementation: Type
     name: Optional[str]
@@ -53,7 +55,7 @@ class ServiceRegistry:
         scope: str = "singleton",
         metadata: Optional[Dict[str, Any]] = None,
         tags: Optional[List[str]] = None,
-        health_check: Optional[Callable[[], bool]] = None
+        health_check: Optional[Callable[[], bool]] = None,
     ) -> str:
         """
         Register a service with the registry.
@@ -80,7 +82,7 @@ class ServiceRegistry:
             status=ServiceStatus.REGISTERED,
             registered_at=datetime.now(timezone.utc),
             metadata=metadata or {},
-            health_check=health_check
+            health_check=health_check,
         )
 
         self._registrations[service_key] = registration
@@ -122,9 +124,7 @@ class ServiceRegistry:
             return []
 
         return [
-            self._registrations[service_key]
-            for service_key in self._tags[tag]
-            if service_key in self._registrations
+            self._registrations[service_key] for service_key in self._tags[tag] if service_key in self._registrations
         ]
 
     def find_services_by_interface(self, interface: Type) -> List[ServiceRegistration]:
@@ -198,10 +198,7 @@ class ServiceRegistry:
         return {
             "total_services": len(self._registrations),
             "services_by_status": {
-                status.value: len([
-                    r for r in self._registrations.values()
-                    if r.status == status
-                ])
+                status.value: len([r for r in self._registrations.values() if r.status == status])
                 for status in ServiceStatus
             },
             "available_tags": list(self._tags.keys()),
@@ -213,10 +210,10 @@ class ServiceRegistry:
                     "scope": reg.scope,
                     "status": reg.status.value,
                     "registered_at": reg.registered_at.isoformat(),
-                    "metadata": reg.metadata
+                    "metadata": reg.metadata,
                 }
                 for reg in self._registrations.values()
-            ]
+            ],
         }
 
     def unregister_service(self, interface: Type, name: Optional[str] = None) -> bool:

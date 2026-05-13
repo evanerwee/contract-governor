@@ -27,15 +27,15 @@ class EntitlementGenerator:
     """
 
     # HTTP methods we process
-    SUPPORTED_METHODS = {'get', 'post', 'put', 'patch', 'delete'}
+    SUPPORTED_METHODS = {"get", "post", "put", "patch", "delete"}
 
     # HTTP verb to action mapping
     VERB_TO_ACTION = {
-        'get': ActionType.READ,
-        'post': ActionType.WRITE,
-        'put': ActionType.WRITE,
-        'patch': ActionType.WRITE,
-        'delete': ActionType.DELETE
+        "get": ActionType.READ,
+        "post": ActionType.WRITE,
+        "put": ActionType.WRITE,
+        "patch": ActionType.WRITE,
+        "delete": ActionType.DELETE,
     }
 
     def __init__(self):
@@ -43,9 +43,7 @@ class EntitlementGenerator:
         pass
 
     def generate_manifest(
-        self,
-        openapi_spec: Dict,
-        implementation_registry: Optional[Dict[str, bool]] = None
+        self, openapi_spec: Dict, implementation_registry: Optional[Dict[str, bool]] = None
     ) -> EntitlementManifest:
         """
         Generate contract manifest from OpenAPI specification.
@@ -74,9 +72,9 @@ class EntitlementGenerator:
             implementation_registry = {}
 
         # Extract contract metadata
-        info = openapi_spec.get('info', {})
-        contract_name = info.get('title', 'Unknown')
-        contract_version = info.get('version', '0.0.0')
+        info = openapi_spec.get("info", {})
+        contract_name = info.get("title", "Unknown")
+        contract_version = info.get("version", "0.0.0")
 
         # Create manifest (pure API definition)
         manifest = EntitlementManifest(
@@ -84,25 +82,25 @@ class EntitlementGenerator:
             contract_version=contract_version,
             operations=[],
             metadata={
-                'openapi_version': openapi_spec.get('openapi', '3.0.0'),
-                'servers': openapi_spec.get('servers', [])
-            }
+                "openapi_version": openapi_spec.get("openapi", "3.0.0"),
+                "servers": openapi_spec.get("servers", []),
+            },
         )
 
         # Extract base path from servers[0].url if available
-        base_path = self._extract_base_path(openapi_spec.get('servers', []))
+        base_path = self._extract_base_path(openapi_spec.get("servers", []))
         if base_path:
             logger.info(f"Using base path from servers: {base_path}")
 
         # Process all paths
-        paths = openapi_spec.get('paths', {})
+        paths = openapi_spec.get("paths", {})
         for path, path_item in paths.items():
             operations = self._extract_operations_from_path(
                 path=path,
                 path_item=path_item,
                 implementation_registry=implementation_registry,
                 base_path=base_path,
-                openapi_spec=openapi_spec
+                openapi_spec=openapi_spec,
             )
             manifest.operations.extend(operations)
 
@@ -134,15 +132,16 @@ class EntitlementGenerator:
         if not servers or not isinstance(servers, list) or len(servers) == 0:
             return ""
 
-        server_url = servers[0].get('url', '')
+        server_url = servers[0].get("url", "")
         if not server_url:
             return ""
 
         # Parse URL to extract path
         from urllib.parse import urlparse
+
         parsed = urlparse(server_url)
         # Safe cast: urlparse().path always returns str, but server_url is Any (from untyped dict)
-        base_path: str = cast(str, parsed.path.rstrip('/'))  # Remove trailing slash
+        base_path: str = cast(str, parsed.path.rstrip("/"))  # Remove trailing slash
 
         return base_path
 
@@ -152,7 +151,7 @@ class EntitlementGenerator:
         path_item: Dict,
         implementation_registry: Dict[str, bool],
         base_path: str = "",
-        openapi_spec: Dict[str, Any] | None = None
+        openapi_spec: Dict[str, Any] | None = None,
     ) -> list[OperationEntitlement]:
         """
         Extract all operations from a path item.
@@ -178,13 +177,14 @@ class EntitlementGenerator:
             operation_spec = path_item[method]
 
             # Use operationId from OpenAPI spec if available, otherwise generate
-            operation_id = operation_spec.get('operationId')
+            operation_id = operation_spec.get("operationId")
             if operation_id:
                 # Sanitize the operationId to match Pydantic pattern
                 import re
-                operation_id = re.sub(r'[^a-zA-Z0-9_-]', '', operation_id)
-                operation_id = re.sub(r'[-_]+', '-', operation_id)
-                operation_id = operation_id.strip('-')
+
+                operation_id = re.sub(r"[^a-zA-Z0-9_-]", "", operation_id)
+                operation_id = re.sub(r"[-_]+", "-", operation_id)
+                operation_id = operation_id.strip("-")
             else:
                 # Generate operation ID from path and method
                 operation_id = self.generate_operation_id(path, method)
@@ -196,13 +196,19 @@ class EntitlementGenerator:
             path_variables = self.extract_path_variables(path)
 
             # Extract query parameters and metadata from the operation spec
-            query_parameters, query_parameter_examples, query_parameter_required, query_parameter_types = self.extract_query_parameters(operation_spec)
+            query_parameters, query_parameter_examples, query_parameter_required, query_parameter_types = (
+                self.extract_query_parameters(operation_spec)
+            )
 
             # Extract request body schema for POST/PUT
-            request_body_schema = self.extract_request_body_schema(operation_spec) if method.upper() in ['POST', 'PUT', 'PATCH'] else None
+            request_body_schema = (
+                self.extract_request_body_schema(operation_spec) if method.upper() in ["POST", "PUT", "PATCH"] else None
+            )
 
             # Extract body parameters from request body schema
-            body_parameters, body_parameter_examples, body_parameter_required, body_parameter_types = self.extract_body_parameters(request_body_schema, openapi_spec or {})
+            body_parameters, body_parameter_examples, body_parameter_required, body_parameter_types = (
+                self.extract_body_parameters(request_body_schema, openapi_spec or {})
+            )
 
             # Determine action
             action = self.map_verb_to_action(method)
@@ -211,10 +217,10 @@ class EntitlementGenerator:
             is_implemented = implementation_registry.get(operation_id, False)
 
             # Extract metadata
-            tags = operation_spec.get('tags', [])
-            summary = operation_spec.get('summary')
-            description = operation_spec.get('description')
-            deprecated = operation_spec.get('deprecated', False)
+            tags = operation_spec.get("tags", [])
+            summary = operation_spec.get("summary")
+            description = operation_spec.get("description")
+            deprecated = operation_spec.get("deprecated", False)
 
             # Generate control plane HTTPS URL
             cp_https = f"https://router/{operation_id_snake_case}"
@@ -242,7 +248,7 @@ class EntitlementGenerator:
                 request_body_schema=request_body_schema,
                 is_implemented=is_implemented,
                 is_mock=not is_implemented,
-                cp_https=cp_https
+                cp_https=cp_https,
             )
 
             operations.append(operation)
@@ -284,24 +290,24 @@ class EntitlementGenerator:
         import re
 
         # Remove leading slash
-        clean_path = path.lstrip('/')
+        clean_path = path.lstrip("/")
 
         # Replace path parameters {param} with param (remove curly braces)
         # e.g., /users/{user_id} -> /users/user_id
-        clean_path = re.sub(r'\{([^}]+)\}', r'\1', clean_path)
+        clean_path = re.sub(r"\{([^}]+)\}", r"\1", clean_path)
 
         # Replace slashes with underscores
-        clean_path = clean_path.replace('/', '_')
+        clean_path = clean_path.replace("/", "_")
 
         # Remove any remaining invalid characters (keep only alphanumeric, underscore, dash)
         # This ensures compliance with Pydantic pattern: ^[a-zA-Z0-9_-]+$  # noqa
-        clean_path = re.sub(r'[^a-zA-Z0-9_-]', '', clean_path)
+        clean_path = re.sub(r"[^a-zA-Z0-9_-]", "", clean_path)
 
         # Replace multiple underscores/dashes with single dash
-        clean_path = re.sub(r'[-_]+', '-', clean_path)
+        clean_path = re.sub(r"[-_]+", "-", clean_path)
 
         # Remove leading/trailing dashes
-        clean_path = clean_path.strip('-')
+        clean_path = clean_path.strip("-")
 
         return f"{clean_path}_{method.lower()}"
 
@@ -333,13 +339,13 @@ class EntitlementGenerator:
         snake_case = operation_id.lower()
 
         # Replace dashes with underscores
-        snake_case = snake_case.replace('-', '_')
+        snake_case = snake_case.replace("-", "_")
 
         # Replace multiple underscores with single underscore
-        snake_case = re.sub(r'_+', '_', snake_case)
+        snake_case = re.sub(r"_+", "_", snake_case)
 
         # Remove leading/trailing underscores
-        snake_case = snake_case.strip('_')
+        snake_case = snake_case.strip("_")
 
         return snake_case
 
@@ -367,12 +373,14 @@ class EntitlementGenerator:
         import re
 
         # Find all variables in {variable} format
-        variables = re.findall(r'\{([^}]+)\}', path)
+        variables = re.findall(r"\{([^}]+)\}", path)
 
         return variables
 
     @staticmethod
-    def extract_query_parameters(operation_spec: Dict) -> tuple[list[str], dict[str, str], dict[str, bool], dict[str, str]]:
+    def extract_query_parameters(
+        operation_spec: Dict,
+    ) -> tuple[list[str], dict[str, str], dict[str, bool], dict[str, str]]:
         """
         Extract query parameter names, examples, required flags, and types from OpenAPI operation spec.
 
@@ -398,27 +406,27 @@ class EntitlementGenerator:
         query_param_required = {}
         query_param_types = {}
 
-        parameters = operation_spec.get('parameters', [])
+        parameters = operation_spec.get("parameters", [])
         for param in parameters:
-            if param.get('in') == 'query':
-                param_name = param.get('name')
+            if param.get("in") == "query":
+                param_name = param.get("name")
                 if param_name:
                     query_params.append(param_name)
 
                     # Extract required flag (default False)
-                    query_param_required[param_name] = param.get('required', False)
+                    query_param_required[param_name] = param.get("required", False)
 
                     # Extract type from schema
-                    schema = param.get('schema', {})
-                    query_param_types[param_name] = schema.get('type', 'string')
+                    schema = param.get("schema", {})
+                    query_param_types[param_name] = schema.get("type", "string")
 
                     # Extract example value if present
-                    example = param.get('example')
+                    example = param.get("example")
                     if example is not None:
                         query_param_examples[param_name] = str(example)
-                    elif schema.get('default') is not None:
+                    elif schema.get("default") is not None:
                         # Fall back to schema default if no example
-                        query_param_examples[param_name] = str(schema['default'])
+                        query_param_examples[param_name] = str(schema["default"])
 
         return query_params, query_param_examples, query_param_required, query_param_types
 
@@ -433,21 +441,21 @@ class EntitlementGenerator:
         Returns:
             Request body schema dict or None if no request body
         """
-        request_body = operation_spec.get('requestBody', {})
+        request_body = operation_spec.get("requestBody", {})
         if not request_body:
             return None
 
-        content = request_body.get('content', {})
+        content = request_body.get("content", {})
         # Prefer application/json
-        json_content = content.get('application/json', {})
+        json_content = content.get("application/json", {})
         if json_content:
             # Safe cast: schema value from OpenAPI content is always a dict or None
-            return cast(Optional[Dict[str, Any]], json_content.get('schema'))
+            return cast(Optional[Dict[str, Any]], json_content.get("schema"))
 
         # Fall back to first content type
         for content_type, content_spec in content.items():
             # Safe cast: schema value from OpenAPI content is always a dict or None
-            return cast(Optional[Dict[str, Any]], content_spec.get('schema'))
+            return cast(Optional[Dict[str, Any]], content_spec.get("schema"))
 
         return None
 
@@ -466,11 +474,11 @@ class EntitlementGenerator:
         if not isinstance(schema, dict):
             return schema
 
-        if '$ref' in schema:
-            ref_path = schema['$ref']
+        if "$ref" in schema:
+            ref_path = schema["$ref"]
             # Parse reference path like "#/components/schemas/ExtractionSubmitRequest"
-            if ref_path.startswith('#/'):
-                parts = ref_path[2:].split('/')
+            if ref_path.startswith("#/"):
+                parts = ref_path[2:].split("/")
                 resolved = openapi_spec
                 for part in parts:
                     resolved = resolved.get(part, {})
@@ -480,7 +488,9 @@ class EntitlementGenerator:
         return schema
 
     @staticmethod
-    def extract_body_parameters(request_body_schema: Optional[Dict], openapi_spec: Dict) -> tuple[list[str], dict[str, Any], dict[str, bool], dict[str, str]]:
+    def extract_body_parameters(
+        request_body_schema: Optional[Dict], openapi_spec: Dict
+    ) -> tuple[list[str], dict[str, Any], dict[str, bool], dict[str, str]]:
         """
         Extract body parameter names, examples, required flags, and types from request body schema.
 
@@ -506,11 +516,11 @@ class EntitlementGenerator:
         # Resolve $ref if present
         resolved_schema = EntitlementGenerator.resolve_ref(request_body_schema, openapi_spec)
 
-        if not resolved_schema or resolved_schema.get('type') != 'object':
+        if not resolved_schema or resolved_schema.get("type") != "object":
             return body_params, body_param_examples, body_param_required, body_param_types
 
-        properties = resolved_schema.get('properties', {})
-        required_list = resolved_schema.get('required', [])
+        properties = resolved_schema.get("properties", {})
+        required_list = resolved_schema.get("required", [])
 
         for param_name, param_schema in properties.items():
             body_params.append(param_name)
@@ -519,19 +529,19 @@ class EntitlementGenerator:
             body_param_required[param_name] = param_name in required_list
 
             # Type
-            param_type = param_schema.get('type', 'string')
-            if param_type == 'array':
-                items_type = param_schema.get('items', {}).get('type', 'string')
+            param_type = param_schema.get("type", "string")
+            if param_type == "array":
+                items_type = param_schema.get("items", {}).get("type", "string")
                 body_param_types[param_name] = f"array[{items_type}]"
             else:
                 body_param_types[param_name] = param_type
 
             # Example value
-            example = param_schema.get('example')
+            example = param_schema.get("example")
             if example is not None:
                 body_param_examples[param_name] = example
-            elif param_schema.get('default') is not None:
-                body_param_examples[param_name] = param_schema['default']
+            elif param_schema.get("default") is not None:
+                body_param_examples[param_name] = param_schema["default"]
 
         return body_params, body_param_examples, body_param_required, body_param_types
 
@@ -552,8 +562,7 @@ class EntitlementGenerator:
             ActionType enum value
         """
         return EntitlementGenerator.VERB_TO_ACTION.get(
-            method.lower(),
-            ActionType.READ  # Default to read for unknown methods
+            method.lower(), ActionType.READ  # Default to read for unknown methods
         )
 
     def extract_operation_ids(self, openapi_spec: Dict) -> Set[str]:
@@ -570,7 +579,7 @@ class EntitlementGenerator:
         """
         operation_ids = set()
 
-        paths = openapi_spec.get('paths', {})
+        paths = openapi_spec.get("paths", {})
         for path, path_item in paths.items():
             for method in self.SUPPORTED_METHODS:
                 if method in path_item:

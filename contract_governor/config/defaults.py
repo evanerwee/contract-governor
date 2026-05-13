@@ -12,6 +12,7 @@ from ..core.models import ExposurePolicy, StipulationConfig
 # Export default stipulations for easy access
 DEFAULT_STIPULATIONS = None
 
+
 def get_default_stipulations() -> Dict[str, StipulationConfig]:
     """
     Get default stipulation configurations for common API patterns.
@@ -36,13 +37,12 @@ def get_default_stipulations() -> Dict[str, StipulationConfig]:
                 "proxy_enforced": True,
                 "platform": "Contract Stipulations System",
                 "tenant_isolation": True,
-                "data_classification": "tenant-scoped"
+                "data_classification": "tenant-scoped",
             },
             catalog_default_visible=True,
             extension_namespace="x-governance",
-            enforce_version_alignment=True
+            enforce_version_alignment=True,
         ),
-
         # Tenant-scoped Evidence Query API v2 (allows PATCH)
         "evidence-query:v2": StipulationConfig(
             stipulation_id="evidence-query:v2",
@@ -60,13 +60,12 @@ def get_default_stipulations() -> Dict[str, StipulationConfig]:
                 "platform": "Contract Stipulations System",
                 "tenant_isolation": True,
                 "data_classification": "tenant-scoped",
-                "breaking_changes": "Allows PATCH operations"
+                "breaking_changes": "Allows PATCH operations",
             },
             catalog_default_visible=True,
             extension_namespace="x-governance",
-            enforce_version_alignment=True
+            enforce_version_alignment=True,
         ),
-
         # Global Control-Plane Authentication API
         "authentication:v1": StipulationConfig(
             stipulation_id="authentication:v1",
@@ -84,13 +83,12 @@ def get_default_stipulations() -> Dict[str, StipulationConfig]:
                 "platform": "Contract Stipulations System",
                 "tenant_isolation": False,
                 "data_classification": "global-control-plane",
-                "security_level": "high"
+                "security_level": "high",
             },
             catalog_default_visible=True,
             extension_namespace="x-governance",
-            enforce_version_alignment=True
+            enforce_version_alignment=True,
         ),
-
         # Global Control-Plane Authorization API
         "authorization:v1": StipulationConfig(
             stipulation_id="authorization:v1",
@@ -108,13 +106,12 @@ def get_default_stipulations() -> Dict[str, StipulationConfig]:
                 "platform": "Contract Stipulations System",
                 "tenant_isolation": False,
                 "data_classification": "global-control-plane",
-                "security_level": "critical"
+                "security_level": "critical",
             },
             catalog_default_visible=True,
             extension_namespace="x-governance",
-            enforce_version_alignment=True
+            enforce_version_alignment=True,
         ),
-
         # Tenant-scoped Policy Management API
         "policy-management:v1": StipulationConfig(
             stipulation_id="policy-management:v1",
@@ -132,13 +129,12 @@ def get_default_stipulations() -> Dict[str, StipulationConfig]:
                 "platform": "Contract Stipulations System",
                 "tenant_isolation": True,
                 "data_classification": "tenant-scoped",
-                "operations_allowed": "full-crud"
+                "operations_allowed": "full-crud",
             },
             catalog_default_visible=True,
             extension_namespace="x-governance",
-            enforce_version_alignment=True
+            enforce_version_alignment=True,
         ),
-
         # Private Internal API (not exposed in catalog)
         "internal-metrics:v1": StipulationConfig(
             stipulation_id="internal-metrics:v1",
@@ -156,13 +152,12 @@ def get_default_stipulations() -> Dict[str, StipulationConfig]:
                 "platform": "Contract Stipulations System",
                 "tenant_isolation": False,
                 "data_classification": "internal",
-                "access_level": "private"
+                "access_level": "private",
             },
             catalog_default_visible=False,  # Not visible in public catalog
             extension_namespace="x-governance",
-            enforce_version_alignment=True
+            enforce_version_alignment=True,
         ),
-
         # Multi-tenant Subscription API with scope parameter
         "subscription:v1": StipulationConfig(
             stipulation_id="subscription:v1",
@@ -180,13 +175,12 @@ def get_default_stipulations() -> Dict[str, StipulationConfig]:
                 "platform": "Contract Stipulations System",
                 "tenant_isolation": True,
                 "data_classification": "tenant-scoped",
-                "billing_impact": True
+                "billing_impact": True,
             },
             catalog_default_visible=True,
             extension_namespace="x-governance",
-            enforce_version_alignment=True
+            enforce_version_alignment=True,
         ),
-
         # Global Telemetry API
         "telemetry:v1": StipulationConfig(
             stipulation_id="telemetry:v1",
@@ -204,12 +198,12 @@ def get_default_stipulations() -> Dict[str, StipulationConfig]:
                 "platform": "Contract Stipulations System",
                 "tenant_isolation": False,
                 "data_classification": "global-control-plane",
-                "data_retention": "90_days"
+                "data_retention": "90_days",
             },
             catalog_default_visible=True,
             extension_namespace="x-governance",
-            enforce_version_alignment=True
-        )
+            enforce_version_alignment=True,
+        ),
     }
 
 
@@ -236,14 +230,13 @@ def get_stipulation_templates() -> Dict[str, Dict]:
                     "proxy_enforced": True,
                     "platform": "Contract Stipulations System",
                     "tenant_isolation": True,
-                    "data_classification": "tenant-scoped"
+                    "data_classification": "tenant-scoped",
                 },
                 "catalog_default_visible": True,
                 "extension_namespace": "x-governance",
-                "enforce_version_alignment": True
-            }
+                "enforce_version_alignment": True,
+            },
         },
-
         "tenant-scoped-readonly": {
             "description": "Template for tenant-scoped read-only APIs",
             "template": {
@@ -260,14 +253,13 @@ def get_stipulation_templates() -> Dict[str, Dict]:
                     "platform": "Contract Stipulations System",
                     "tenant_isolation": True,
                     "data_classification": "tenant-scoped",
-                    "operations_allowed": "read-only"
+                    "operations_allowed": "read-only",
                 },
                 "catalog_default_visible": True,
                 "extension_namespace": "x-governance",
-                "enforce_version_alignment": True
-            }
+                "enforce_version_alignment": True,
+            },
         },
-
         "global-control-plane": {
             "description": "Template for global control-plane APIs",
             "template": {
@@ -283,14 +275,13 @@ def get_stipulation_templates() -> Dict[str, Dict]:
                     "proxy_enforced": True,
                     "platform": "Contract Stipulations System",
                     "tenant_isolation": False,
-                    "data_classification": "global-control-plane"
+                    "data_classification": "global-control-plane",
                 },
                 "catalog_default_visible": True,
                 "extension_namespace": "x-governance",
-                "enforce_version_alignment": True
-            }
+                "enforce_version_alignment": True,
+            },
         },
-
         "private-internal": {
             "description": "Template for private internal APIs",
             "template": {
@@ -307,13 +298,13 @@ def get_stipulation_templates() -> Dict[str, Dict]:
                     "platform": "Contract Stipulations System",
                     "tenant_isolation": False,
                     "data_classification": "internal",
-                    "access_level": "private"
+                    "access_level": "private",
                 },
                 "catalog_default_visible": False,
                 "extension_namespace": "x-governance",
-                "enforce_version_alignment": True
-            }
-        }
+                "enforce_version_alignment": True,
+            },
+        },
     }
 
 

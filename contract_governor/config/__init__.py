@@ -17,5 +17,5 @@ __all__ = [
     "LocalFileConfigSource",
     "S3ConfigSource",
     "DynamoDBConfigSource",
-    "DEFAULT_STIPULATIONS"
+    "DEFAULT_STIPULATIONS",
 ]

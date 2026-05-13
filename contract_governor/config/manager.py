@@ -47,7 +47,9 @@ class ConfigurationManager:
         self._reload_thread: threading.Thread | None = None
         self._stop_reload = threading.Event()
 
-    def load_stipulation(self, category: str, api_major_version: str, use_cache: bool = True) -> Optional[StipulationConfig]:
+    def load_stipulation(
+        self, category: str, api_major_version: str, use_cache: bool = True
+    ) -> Optional[StipulationConfig]:
         """
         Load a stipulation configuration with precedence and caching.
 
@@ -123,7 +125,9 @@ class ConfigurationManager:
                     if validation_result.is_valid:
                         all_configs[key] = config
                     else:
-                        logger.error(f"Invalid configuration {key} from {source.__class__.__name__}: {validation_result.errors}")
+                        logger.error(
+                            f"Invalid configuration {key} from {source.__class__.__name__}: {validation_result.errors}"
+                        )
 
                 logger.info(f"Loaded {len(source_configs)} stipulations from {source.__class__.__name__}")
 
@@ -140,7 +144,9 @@ class ConfigurationManager:
 
         return all_configs
 
-    def save_stipulation(self, category: str, api_major_version: str, config: StipulationConfig, target_source: int = 0) -> bool:
+    def save_stipulation(
+        self, category: str, api_major_version: str, config: StipulationConfig, target_source: int = 0
+    ) -> bool:
         """
         Save a stipulation configuration to a specific source.
 
@@ -178,7 +184,7 @@ class ConfigurationManager:
                 self._cache_timestamps[key] = datetime.now(timezone.utc)
 
             # Notify change listeners
-            self._notify_change_listeners(key, config, 'updated')
+            self._notify_change_listeners(key, config, "updated")
 
             logger.info(f"Saved stipulation {key} to {source.__class__.__name__}")
             return True
@@ -219,7 +225,7 @@ class ConfigurationManager:
                     self._cache_timestamps.pop(key, None)
 
                 # Notify change listeners
-                self._notify_change_listeners(key, None, 'deleted')
+                self._notify_change_listeners(key, None, "deleted")
 
                 logger.info(f"Deleted stipulation {key} from {source.__class__.__name__}")
 
@@ -264,15 +270,10 @@ class ConfigurationManager:
         for i, source in enumerate(self.sources):
             try:
                 source_info = source.get_source_info()
-                source_info['precedence'] = i
+                source_info["precedence"] = i
                 info.append(source_info)
             except Exception as e:
-                info.append({
-                    'type': source.__class__.__name__,
-                    'precedence': i,
-                    'available': False,
-                    'error': str(e)
-                })
+                info.append({"type": source.__class__.__name__, "precedence": i, "available": False, "error": str(e)})
 
         return info
 
@@ -357,14 +358,15 @@ class ConfigurationManager:
         """Get cache statistics."""
         with self._lock:
             now = datetime.now(timezone.utc)
-            expired_count = sum(1 for ts in self._cache_timestamps.values()
-                              if now - ts > timedelta(seconds=self.cache_ttl))
+            expired_count = sum(
+                1 for ts in self._cache_timestamps.values() if now - ts > timedelta(seconds=self.cache_ttl)
+            )
 
             return {
-                'total_entries': len(self._cache),
-                'expired_entries': expired_count,
-                'cache_ttl': self.cache_ttl,
-                'hit_ratio': getattr(self, '_cache_hits', 0) / max(getattr(self, '_cache_requests', 1), 1)
+                "total_entries": len(self._cache),
+                "expired_entries": expired_count,
+                "cache_ttl": self.cache_ttl,
+                "hit_ratio": getattr(self, "_cache_hits", 0) / max(getattr(self, "_cache_requests", 1), 1),
             }
 
     def _is_cache_valid(self, key: str) -> bool:
@@ -376,7 +378,7 @@ class ConfigurationManager:
         is_valid: bool = age.total_seconds() < self.cache_ttl
         return is_valid
 
-    def _validate_config(self, config: StipulationConfig) -> 'ValidationResult':
+    def _validate_config(self, config: StipulationConfig) -> "ValidationResult":
         """Validate a stipulation configuration."""
         errors: list[str] = []
         warnings: list[str] = []
@@ -394,13 +396,19 @@ class ConfigurationManager:
         if not config.proxy_prefix_format:
             errors.append("proxy_prefix_format is required")
 
-        if config.requires_scope_parameter and config.proxy_prefix_format and "{tenant_id}" not in config.proxy_prefix_format and "{scope_id}" not in config.proxy_prefix_format:
+        if (
+            config.requires_scope_parameter
+            and config.proxy_prefix_format
+            and "{tenant_id}" not in config.proxy_prefix_format
+            and "{scope_id}" not in config.proxy_prefix_format
+        ):
             errors.append("requires_scope_parameter is True but proxy_prefix_format lacks scope parameter")
 
         # JSON Schema validation if available
         if self._validation_schema:
             try:
                 import jsonschema
+
                 config_dict = asdict(config)
                 jsonschema.validate(config_dict, self._validation_schema)
             except ImportError:
@@ -408,11 +416,7 @@ class ConfigurationManager:
             except Exception as e:
                 errors.append(f"Schema validation failed: {e}")
 
-        return ValidationResult(
-            is_valid=len(errors) == 0,
-            errors=errors,
-            warnings=warnings
-        )
+        return ValidationResult(is_valid=len(errors) == 0, errors=errors, warnings=warnings)
 
     def _notify_change_listeners(self, key: str, config: Optional[StipulationConfig], action: str) -> None:
         """Notify all change listeners of a configuration change."""
@@ -449,7 +453,7 @@ class ConfigurationManager:
                                     self._cache[key] = config
                                     self._cache_timestamps[key] = datetime.now(timezone.utc)
 
-                                self._notify_change_listeners(key, config, 'reloaded')
+                                self._notify_change_listeners(key, config, "reloaded")
 
                 self._source_hashes[source_key] = current_hash
 
@@ -462,8 +466,7 @@ class ConfigurationManager:
     def _compute_source_hash(self, source_info: Dict[str, Any]) -> str:
         """Compute hash of source information for change detection."""
         # Remove timestamp fields that change frequently
-        filtered_info = {k: v for k, v in source_info.items()
-                        if k not in ['last_checked', 'timestamp']}
+        filtered_info = {k: v for k, v in source_info.items() if k not in ["last_checked", "timestamp"]}
 
         info_str = json.dumps(filtered_info, sort_keys=True)
         return hashlib.sha256(info_str.encode()).hexdigest()
@@ -510,7 +513,9 @@ class ConfigurationVersionManager:
         self._versions: dict[str, list[tuple[datetime, StipulationConfig, str]]] = {}
         self._lock = threading.RLock()
 
-    def save_version(self, category: str, api_major_version: str, config: StipulationConfig, version_id: str | None = None) -> str:
+    def save_version(
+        self, category: str, api_major_version: str, config: StipulationConfig, version_id: str | None = None
+    ) -> str:
         """
         Save a versioned configuration.
 
@@ -537,7 +542,7 @@ class ConfigurationVersionManager:
 
             # Trim old versions
             if len(self._versions[key]) > self.max_versions:
-                self._versions[key] = self._versions[key][-self.max_versions:]
+                self._versions[key] = self._versions[key][-self.max_versions :]
 
         # Save to primary source
         success = self.manager.save_stipulation(category, api_major_version, config)
@@ -555,9 +560,9 @@ class ConfigurationVersionManager:
             versions = self._versions.get(key, [])
             return [
                 {
-                    'version_id': version_id,
-                    'timestamp': timestamp.isoformat(),
-                    'config_hash': hashlib.sha256(json.dumps(asdict(config), sort_keys=True).encode()).hexdigest()[:8]
+                    "version_id": version_id,
+                    "timestamp": timestamp.isoformat(),
+                    "config_hash": hashlib.sha256(json.dumps(asdict(config), sort_keys=True).encode()).hexdigest()[:8],
                 }
                 for timestamp, config, version_id in versions
             ]

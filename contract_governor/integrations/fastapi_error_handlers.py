@@ -15,10 +15,7 @@ try:
     from fastapi.exception_handlers import http_exception_handler
     from fastapi.responses import JSONResponse
 except ImportError:
-    raise ImportError(
-        "FastAPI is required for this module. "
-        "Install with: pip install contract-governor[server]"
-    )
+    raise ImportError("FastAPI is required for this module. " "Install with: pip install contract-governor[server]")
 
 from ..core.errors import (
     AuthenticationError,
@@ -95,8 +92,7 @@ class FastAPIErrorHandler:
         error_response = self._build_error_response(request, exc)
         error_response["transformation_details"] = {
             "stage": getattr(exc, "transformation_stage", None),
-            "has_original_contract": getattr(exc, "original_contract", None)
-            is not None,
+            "has_original_contract": getattr(exc, "original_contract", None) is not None,
         }
 
         return JSONResponse(status_code=422, content=error_response)
@@ -279,36 +275,16 @@ def register_error_handlers(
     )
 
     # Stipulation hierarchy
-    app.add_exception_handler(
-        ValidationError, error_handler.validation_error_handler
-    )
-    app.add_exception_handler(
-        TransformationError, error_handler.transformation_error_handler
-    )
-    app.add_exception_handler(
-        ContractNotFoundError, error_handler.contract_not_found_handler
-    )
-    app.add_exception_handler(
-        StipulationViolationError, error_handler.validation_error_handler
-    )
-    app.add_exception_handler(
-        ConfigurationError, error_handler.stipulation_error_handler
-    )
-    app.add_exception_handler(
-        RegistryError, error_handler.stipulation_error_handler
-    )
-    app.add_exception_handler(
-        AuthenticationError, error_handler.stipulation_error_handler
-    )
-    app.add_exception_handler(
-        AuthorizationError, error_handler.stipulation_error_handler
-    )
-    app.add_exception_handler(
-        NetworkError, error_handler.stipulation_error_handler
-    )
-    app.add_exception_handler(
-        StipulationError, error_handler.stipulation_error_handler
-    )
+    app.add_exception_handler(ValidationError, error_handler.validation_error_handler)
+    app.add_exception_handler(TransformationError, error_handler.transformation_error_handler)
+    app.add_exception_handler(ContractNotFoundError, error_handler.contract_not_found_handler)
+    app.add_exception_handler(StipulationViolationError, error_handler.validation_error_handler)
+    app.add_exception_handler(ConfigurationError, error_handler.stipulation_error_handler)
+    app.add_exception_handler(RegistryError, error_handler.stipulation_error_handler)
+    app.add_exception_handler(AuthenticationError, error_handler.stipulation_error_handler)
+    app.add_exception_handler(AuthorizationError, error_handler.stipulation_error_handler)
+    app.add_exception_handler(NetworkError, error_handler.stipulation_error_handler)
+    app.add_exception_handler(StipulationError, error_handler.stipulation_error_handler)
 
     # Preserve FastAPI's own HTTPException behavior
     app.add_exception_handler(HTTPException, http_exception_handler)

@@ -47,8 +47,7 @@ class TestFieldIntrospection:
 
         # They should be exactly equal
         assert utility_fields == dataclass_fields, (
-            f"Field mismatch: utility returned {utility_fields}, "
-            f"but dataclass has {dataclass_fields}"
+            f"Field mismatch: utility returned {utility_fields}, " f"but dataclass has {dataclass_fields}"
         )
 
     def test_field_introspection_returns_set(self):
@@ -70,9 +69,7 @@ class TestFieldIntrospection:
             "stipulation_id",
             "stipulation_version",
         }
-        assert essential_fields.issubset(result), (
-            f"Missing essential fields: {essential_fields - result}"
-        )
+        assert essential_fields.issubset(result), f"Missing essential fields: {essential_fields - result}"
 
 
 class TestWarningMessageFormat:
@@ -89,9 +86,7 @@ class TestWarningMessageFormat:
     @given(
         source_path=st.text(min_size=1, max_size=200).filter(lambda x: x.strip()),
         unknown_fields=st.lists(
-            st.text(min_size=1, max_size=50).filter(lambda x: x.strip() and "'" not in x),
-            min_size=1,
-            max_size=10
+            st.text(min_size=1, max_size=50).filter(lambda x: x.strip() and "'" not in x), min_size=1, max_size=10
         ),
     )
     @settings(max_examples=100)
@@ -105,16 +100,18 @@ class TestWarningMessageFormat:
         valid_fields = get_valid_stipulation_fields()
         message = format_unknown_fields_warning(source_path, unknown_fields, valid_fields)
 
-        assert source_path in message, (
-            f"Source path '{source_path}' not found in message: {message}"
-        )
+        assert source_path in message, f"Source path '{source_path}' not found in message: {message}"
 
     @given(
         unknown_fields=st.lists(
-            st.text(alphabet=st.characters(whitelist_categories=('L', 'N'), min_codepoint=97, max_codepoint=122), min_size=1, max_size=20),
+            st.text(
+                alphabet=st.characters(whitelist_categories=("L", "N"), min_codepoint=97, max_codepoint=122),
+                min_size=1,
+                max_size=20,
+            ),
             min_size=1,
             max_size=5,
-            unique=True
+            unique=True,
         ),
     )
     @settings(max_examples=100)
@@ -131,9 +128,7 @@ class TestWarningMessageFormat:
 
         # Check that each unknown field appears in the message
         for field_name in unknown_fields:
-            assert field_name in message, (
-                f"Unknown field '{field_name}' not found in message: {message}"
-            )
+            assert field_name in message, f"Unknown field '{field_name}' not found in message: {message}"
 
     def test_warning_message_contains_valid_fields(self):
         """
@@ -150,15 +145,13 @@ class TestWarningMessageFormat:
 
         # Check that at least some valid fields appear in the message
         # (they should all be in the sorted list)
-        assert "Valid fields are:" in message, (
-            f"'Valid fields are:' not found in message: {message}"
-        )
+        assert "Valid fields are:" in message, f"'Valid fields are:' not found in message: {message}"
 
         # Check that essential valid fields appear
         for essential_field in ["exposure_policy", "stipulation_id"]:
-            assert essential_field in message, (
-                f"Essential valid field '{essential_field}' not found in message: {message}"
-            )
+            assert (
+                essential_field in message
+            ), f"Essential valid field '{essential_field}' not found in message: {message}"
 
     def test_warning_message_format_structure(self):
         """Verify the overall structure of the warning message."""
@@ -183,18 +176,26 @@ def valid_stipulation_config(draw):
 
     # Generate proxy_prefix_format based on exposure policy
     if exposure_policy == ExposurePolicy.TENANT_SCOPED:
-        proxy_prefix = draw(st.sampled_from([
-            "/tenant/{tenant_id}/api/v1",
-            "/{scope_id}/service/v2",
-            "/org/{organization_id}/data/v1",
-        ]))
+        proxy_prefix = draw(
+            st.sampled_from(
+                [
+                    "/tenant/{tenant_id}/api/v1",
+                    "/{scope_id}/service/v2",
+                    "/org/{organization_id}/data/v1",
+                ]
+            )
+        )
         requires_scope = True
     else:
-        proxy_prefix = draw(st.sampled_from([
-            "/api/v1",
-            "/service/v2",
-            None,
-        ]))
+        proxy_prefix = draw(
+            st.sampled_from(
+                [
+                    "/api/v1",
+                    "/service/v2",
+                    None,
+                ]
+            )
+        )
         requires_scope = False
 
     return StipulationConfig(
@@ -206,30 +207,27 @@ def valid_stipulation_config(draw):
 
 # Strategy for generating source paths
 source_path_strategy = st.text(
-    alphabet=st.characters(whitelist_categories=('L', 'N', 'P'), min_codepoint=32, max_codepoint=126),
+    alphabet=st.characters(whitelist_categories=("L", "N", "P"), min_codepoint=32, max_codepoint=126),
     min_size=1,
-    max_size=100
-).filter(lambda x: x.strip() and '/' in x or '.' in x)
+    max_size=100,
+).filter(lambda x: x.strip() and "/" in x or "." in x)
 
 
 # Strategy for generating unknown field names
 unknown_field_strategy = st.lists(
     st.text(
-        alphabet=st.characters(whitelist_categories=('L', 'N'), min_codepoint=97, max_codepoint=122),
+        alphabet=st.characters(whitelist_categories=("L", "N"), min_codepoint=97, max_codepoint=122),
         min_size=1,
-        max_size=20
+        max_size=20,
     ).filter(lambda x: x not in get_valid_stipulation_fields()),
     min_size=0,
     max_size=5,
-    unique=True
+    unique=True,
 )
 
 
 # Strategy for generating error messages
-error_message_strategy = st.one_of(
-    st.none(),
-    st.text(min_size=1, max_size=200).filter(lambda x: x.strip())
-)
+error_message_strategy = st.one_of(st.none(), st.text(min_size=1, max_size=200).filter(lambda x: x.strip()))
 
 
 class TestParseResultCorrectness:
@@ -255,10 +253,7 @@ class TestParseResultCorrectness:
     )
     @settings(max_examples=100)
     def test_successful_parse_with_unknown_fields(
-        self,
-        config: StipulationConfig,
-        source_path: str,
-        unknown_fields: List[str]
+        self, config: StipulationConfig, source_path: str, unknown_fields: List[str]
     ):
         """
         **Property 2: ParseResult Correctly Tracks Parsing Outcomes**
@@ -297,11 +292,7 @@ class TestParseResultCorrectness:
         error_message=st.text(min_size=1, max_size=200).filter(lambda x: x.strip()),
     )
     @settings(max_examples=100)
-    def test_failed_parse_with_existing_source(
-        self,
-        source_path: str,
-        error_message: str
-    ):
+    def test_failed_parse_with_existing_source(self, source_path: str, error_message: str):
         """
         **Property 2: ParseResult Correctly Tracks Parsing Outcomes**
         **Validates: Requirements 2.1, 2.2, 2.3**
@@ -433,11 +424,7 @@ class TestParseResultCorrectness:
     )
     @settings(max_examples=100)
     def test_parse_result_state_consistency(
-        self,
-        success: bool,
-        source_exists: bool,
-        unknown_fields: List[str],
-        error_message: Optional[str]
+        self, success: bool, source_exists: bool, unknown_fields: List[str], error_message: Optional[str]
     ):
         """
         **Property 2: ParseResult Correctly Tracks Parsing Outcomes**
@@ -481,13 +468,13 @@ class TestUnknownFieldFilteringPreservesValidConfig:
         config=valid_stipulation_config(),
         unknown_field_names=st.lists(
             st.text(
-                alphabet=st.characters(whitelist_categories=('L', 'N'), min_codepoint=97, max_codepoint=122),
+                alphabet=st.characters(whitelist_categories=("L", "N"), min_codepoint=97, max_codepoint=122),
                 min_size=3,
-                max_size=20
+                max_size=20,
             ).filter(lambda x: x not in get_valid_stipulation_fields()),
             min_size=0,
             max_size=5,
-            unique=True
+            unique=True,
         ),
         unknown_field_values=st.lists(
             st.one_of(
@@ -497,15 +484,12 @@ class TestUnknownFieldFilteringPreservesValidConfig:
                 st.none(),
             ),
             min_size=5,
-            max_size=5
+            max_size=5,
         ),
     )
     @settings(max_examples=100)
     def test_filtering_preserves_valid_config_fields(
-        self,
-        config: StipulationConfig,
-        unknown_field_names: List[str],
-        unknown_field_values: List
+        self, config: StipulationConfig, unknown_field_names: List[str], unknown_field_values: List
     ):
         """
         **Property 1: Unknown Field Filtering Preserves Valid Config**
@@ -531,22 +515,20 @@ class TestUnknownFieldFilteringPreservesValidConfig:
         filtered_data, detected_unknown = filter_unknown_fields(data_with_unknown)
 
         # Verify that all unknown fields were detected
-        assert set(detected_unknown) == set(unknown_field_names), (
-            f"Expected unknown fields {unknown_field_names}, got {detected_unknown}"
-        )
+        assert set(detected_unknown) == set(
+            unknown_field_names
+        ), f"Expected unknown fields {unknown_field_names}, got {detected_unknown}"
 
         # Verify that valid fields are preserved
         for key in valid_data:
             assert key in filtered_data, f"Valid field '{key}' was incorrectly filtered out"
-            assert filtered_data[key] == valid_data[key], (
-                f"Valid field '{key}' value changed: expected {valid_data[key]}, got {filtered_data[key]}"
-            )
+            assert (
+                filtered_data[key] == valid_data[key]
+            ), f"Valid field '{key}' value changed: expected {valid_data[key]}, got {filtered_data[key]}"
 
         # Verify that unknown fields are not in filtered data
         for field_name in unknown_field_names:
-            assert field_name not in filtered_data, (
-                f"Unknown field '{field_name}' was not filtered out"
-            )
+            assert field_name not in filtered_data, f"Unknown field '{field_name}' was not filtered out"
 
         # Verify that a StipulationConfig can be created from filtered data
         new_config = StipulationConfig(**filtered_data)
@@ -606,10 +588,7 @@ class TestUnknownFieldFilteringPreservesValidConfig:
 
     @given(
         valid_field_subset=st.lists(
-            st.sampled_from(list(get_valid_stipulation_fields())),
-            min_size=1,
-            max_size=5,
-            unique=True
+            st.sampled_from(list(get_valid_stipulation_fields())), min_size=1, max_size=5, unique=True
         ),
     )
     @settings(max_examples=50)
@@ -626,8 +605,12 @@ class TestUnknownFieldFilteringPreservesValidConfig:
             # Use simple placeholder values
             if field_name == "exposure_policy":
                 data[field_name] = ExposurePolicy.GLOBAL_CONTROL_PLANE
-            elif field_name in ["requires_scope_parameter", "inject_metadata",
-                               "catalog_default_visible", "enforce_version_alignment"]:
+            elif field_name in [
+                "requires_scope_parameter",
+                "inject_metadata",
+                "catalog_default_visible",
+                "enforce_version_alignment",
+            ]:
                 data[field_name] = False
             elif field_name in ["forbid_methods", "required_fields"]:
                 data[field_name] = []
@@ -676,10 +659,7 @@ class TestErrorMessageQuality:
         category = "test-category"
         api_major = "v1"
 
-        error = StipulationNotFoundError(
-            category=category,
-            api_major_version=api_major
-        )
+        error = StipulationNotFoundError(category=category, api_major_version=api_major)
 
         message = str(error)
 
@@ -705,10 +685,7 @@ class TestErrorMessageQuality:
         parse_error = "Invalid YAML syntax at line 5"
 
         error = StipulationParseError(
-            category=category,
-            api_major_version=api_major,
-            source_path=source_path,
-            parse_error=parse_error
+            category=category, api_major_version=api_major, source_path=source_path, parse_error=parse_error
         )
 
         message = str(error)
@@ -736,10 +713,7 @@ class TestErrorMessageQuality:
         unknown_fields = ["invalid_field", "another_bad_field"]
 
         error = StipulationParseError(
-            category=category,
-            api_major_version=api_major,
-            source_path=source_path,
-            unknown_fields=unknown_fields
+            category=category, api_major_version=api_major, source_path=source_path, unknown_fields=unknown_fields
         )
 
         message = str(error)
@@ -763,16 +737,10 @@ class TestErrorMessageQuality:
         api_major = "v1"
         source_path = "/config/stipulations/test-category_v1.yaml"
 
-        not_found_error = StipulationNotFoundError(
-            category=category,
-            api_major_version=api_major
-        )
+        not_found_error = StipulationNotFoundError(category=category, api_major_version=api_major)
 
         parse_error = StipulationParseError(
-            category=category,
-            api_major_version=api_major,
-            source_path=source_path,
-            parse_error="Invalid syntax"
+            category=category, api_major_version=api_major, source_path=source_path, parse_error="Invalid syntax"
         )
 
         not_found_message = str(not_found_error)
@@ -794,9 +762,9 @@ class TestErrorMessageQuality:
 
     @given(
         category=st.text(
-            alphabet=st.characters(whitelist_categories=('L', 'N'), min_codepoint=97, max_codepoint=122),
+            alphabet=st.characters(whitelist_categories=("L", "N"), min_codepoint=97, max_codepoint=122),
             min_size=1,
-            max_size=30
+            max_size=30,
         ).filter(lambda x: x.strip()),
         api_major=st.sampled_from(["v1", "v2", "v3", "v4", "v5"]),
     )
@@ -811,10 +779,7 @@ class TestErrorMessageQuality:
         """
         from contract_governor.core.errors import StipulationNotFoundError
 
-        error = StipulationNotFoundError(
-            category=category,
-            api_major_version=api_major
-        )
+        error = StipulationNotFoundError(category=category, api_major_version=api_major)
 
         message = str(error)
 
@@ -824,16 +789,16 @@ class TestErrorMessageQuality:
 
     @given(
         category=st.text(
-            alphabet=st.characters(whitelist_categories=('L', 'N'), min_codepoint=97, max_codepoint=122),
+            alphabet=st.characters(whitelist_categories=("L", "N"), min_codepoint=97, max_codepoint=122),
             min_size=1,
-            max_size=30
+            max_size=30,
         ).filter(lambda x: x.strip()),
         api_major=st.sampled_from(["v1", "v2", "v3", "v4", "v5"]),
         source_path=st.text(
-            alphabet=st.characters(whitelist_categories=('L', 'N', 'P'), min_codepoint=32, max_codepoint=126),
+            alphabet=st.characters(whitelist_categories=("L", "N", "P"), min_codepoint=32, max_codepoint=126),
             min_size=5,
-            max_size=100
-        ).filter(lambda x: x.strip() and ('/' in x or '.' in x)),
+            max_size=100,
+        ).filter(lambda x: x.strip() and ("/" in x or "." in x)),
         parse_error=st.text(min_size=1, max_size=100).filter(lambda x: x.strip()),
     )
     @settings(max_examples=100)
@@ -850,10 +815,7 @@ class TestErrorMessageQuality:
         from contract_governor.core.errors import StipulationParseError
 
         error = StipulationParseError(
-            category=category,
-            api_major_version=api_major,
-            source_path=source_path,
-            parse_error=parse_error
+            category=category, api_major_version=api_major, source_path=source_path, parse_error=parse_error
         )
 
         message = str(error)
@@ -873,16 +835,10 @@ class TestErrorMessageQuality:
         """
         from contract_governor.core.errors import StipulationNotFoundError, StipulationParseError
 
-        not_found_error = StipulationNotFoundError(
-            category="test",
-            api_major_version="v1"
-        )
+        not_found_error = StipulationNotFoundError(category="test", api_major_version="v1")
 
         parse_error = StipulationParseError(
-            category="test",
-            api_major_version="v1",
-            source_path="/test/path.yaml",
-            parse_error="Invalid syntax"
+            category="test", api_major_version="v1", source_path="/test/path.yaml", parse_error="Invalid syntax"
         )
 
         # Not found should be 404
@@ -900,16 +856,10 @@ class TestErrorMessageQuality:
         """
         from contract_governor.core.errors import StipulationNotFoundError, StipulationParseError
 
-        not_found_error = StipulationNotFoundError(
-            category="test",
-            api_major_version="v1"
-        )
+        not_found_error = StipulationNotFoundError(category="test", api_major_version="v1")
 
         parse_error = StipulationParseError(
-            category="test",
-            api_major_version="v1",
-            source_path="/test/path.yaml",
-            parse_error="Invalid syntax"
+            category="test", api_major_version="v1", source_path="/test/path.yaml", parse_error="Invalid syntax"
         )
 
         # Error codes should be different

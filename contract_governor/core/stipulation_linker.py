@@ -30,7 +30,7 @@ class StandardPathParser:
         if len(parts) >= 2:
             category = parts[-3] if len(parts) >= 3 else parts[-2]
             version = parts[-2]
-            if version.startswith('v'):
+            if version.startswith("v"):
                 return category, version
         return "", ""
 
@@ -61,11 +61,11 @@ class StipulationLinker(ContractLinker):
 
     def find_stipulation_by_spec(self, openapi_spec: Dict[str, Any]) -> Optional[StipulationConfig]:
         """Find stipulation based on OpenAPI spec metadata."""
-        info = openapi_spec.get('info', {})
-        title = info.get('title', '')
-        version = info.get('version', '')
+        info = openapi_spec.get("info", {})
+        title = info.get("title", "")
+        version = info.get("version", "")
 
-        category = openapi_spec.get('x-category') or self._extract_category(title)
+        category = openapi_spec.get("x-category") or self._extract_category(title)
         api_major = self._extract_major_version(version)
 
         if not category or not api_major:
@@ -76,13 +76,13 @@ class StipulationLinker(ContractLinker):
     def _extract_category(self, title: str) -> str:
         """Extract category from API title."""
         # Convert "Evidence Query API" -> "evidence-query"
-        category = title.lower().replace(' api', '').replace(' ', '-')
+        category = title.lower().replace(" api", "").replace(" ", "-")
         return category
 
     def _extract_major_version(self, version: str) -> str:
         """Extract major version from semantic version."""
         # "1.0.0" -> "v1"
-        match = re.match(r'^(\d+)\.', version)
+        match = re.match(r"^(\d+)\.", version)
         if match:
             return f"v{match.group(1)}"
         return ""

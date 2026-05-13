@@ -44,12 +44,16 @@ class MetadataInjector(ABC):
     """
 
     @abstractmethod
-    def inject_audit_metadata(self, contract: Dict[str, Any], stipulation: StipulationConfig, context: TransformContext) -> Dict[str, Any]:
+    def inject_audit_metadata(
+        self, contract: Dict[str, Any], stipulation: StipulationConfig, context: TransformContext
+    ) -> Dict[str, Any]:
         """Inject audit and governance metadata into contract."""
         pass
 
     @abstractmethod
-    def inject_custom_metadata(self, contract: Dict[str, Any], metadata: Dict[str, Any], namespace: str) -> Dict[str, Any]:
+    def inject_custom_metadata(
+        self, contract: Dict[str, Any], metadata: Dict[str, Any], namespace: str
+    ) -> Dict[str, Any]:
         """Inject custom metadata under specified namespace."""
         pass
 

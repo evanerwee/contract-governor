@@ -12,10 +12,7 @@ try:
     from fastapi import FastAPI, HTTPException, Query
     from fastapi.responses import JSONResponse
 except ImportError:
-    raise ImportError(
-        "FastAPI is required for this module. "
-        "Install with: pip install contract-governor[server]"
-    )
+    raise ImportError("FastAPI is required for this module. " "Install with: pip install contract-governor[server]")
 
 from ..core.monitoring import get_global_audit_logger, get_global_metrics_collector, get_global_performance_monitor
 
@@ -55,8 +52,8 @@ class MonitoringEndpoints:
                     "components": {
                         "metrics_collector": "healthy",
                         "audit_logger": "healthy",
-                        "performance_monitor": "healthy"
-                    }
+                        "performance_monitor": "healthy",
+                    },
                 }
             except Exception as e:
                 raise HTTPException(status_code=503, detail=f"Monitoring system unhealthy: {str(e)}")
@@ -64,7 +61,7 @@ class MonitoringEndpoints:
         @self.app.get(f"{prefix}/metrics", response_class=JSONResponse)
         async def get_metrics(
             limit: int = Query(100, description="Maximum number of recent metrics to return"),
-            metric_type: Optional[str] = Query(None, description="Filter by metric type")
+            metric_type: Optional[str] = Query(None, description="Filter by metric type"),
         ):
             """Get recent metrics data."""
             try:
@@ -74,15 +71,12 @@ class MonitoringEndpoints:
 
                 # Filter by metric type if specified
                 if metric_type:
-                    recent_metrics = [
-                        m for m in recent_metrics
-                        if m.get("type") == metric_type
-                    ]
+                    recent_metrics = [m for m in recent_metrics if m.get("type") == metric_type]
 
                 return {
                     "metrics": recent_metrics,
                     "total": len(recent_metrics),
-                    "timestamp": datetime.now(timezone.utc).isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Failed to retrieve metrics: {str(e)}")
@@ -92,10 +86,7 @@ class MonitoringEndpoints:
             """Get summary of all current metrics."""
             try:
                 summary = self.metrics_collector.get_all_metrics_summary()
-                return {
-                    "summary": summary,
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
+                return {"summary": summary, "timestamp": datetime.now(timezone.utc).isoformat()}
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Failed to retrieve metrics summary: {str(e)}")
 
@@ -104,7 +95,7 @@ class MonitoringEndpoints:
             limit: int = Query(100, description="Maximum number of recent events to return"),
             event_type: Optional[str] = Query(None, description="Filter by event type"),
             contract_category: Optional[str] = Query(None, description="Filter by contract category"),
-            success_only: Optional[bool] = Query(None, description="Filter by success status")
+            success_only: Optional[bool] = Query(None, description="Filter by success status"),
         ):
             """Get recent audit events."""
             try:
@@ -122,11 +113,7 @@ class MonitoringEndpoints:
                 if success_only is not None:
                     events = [e for e in events if e.get("success") == success_only]
 
-                return {
-                    "events": events,
-                    "total": len(events),
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
+                return {"events": events, "total": len(events), "timestamp": datetime.now(timezone.utc).isoformat()}
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Failed to retrieve audit events: {str(e)}")
 
@@ -134,7 +121,7 @@ class MonitoringEndpoints:
         async def get_performance_stats(
             operation_type: Optional[str] = Query(None, description="Filter by operation type"),
             contract_category: Optional[str] = Query(None, description="Filter by contract category"),
-            time_window_hours: int = Query(24, description="Time window in hours for statistics")
+            time_window_hours: int = Query(24, description="Time window in hours for statistics"),
         ):
             """Get performance statistics."""
             try:
@@ -146,21 +133,20 @@ class MonitoringEndpoints:
                 # Filter by time window
                 cutoff_time = datetime.now(timezone.utc) - timedelta(hours=time_window_hours)
                 recent_metrics = [
-                    m for m in recent_metrics
+                    m
+                    for m in recent_metrics
                     if datetime.fromisoformat(m["timestamp"].replace("Z", "+00:00")) > cutoff_time
                 ]
 
                 # Apply filters
                 if operation_type:
                     recent_metrics = [
-                        m for m in recent_metrics
-                        if m.get("labels", {}).get("operation") == operation_type
+                        m for m in recent_metrics if m.get("labels", {}).get("operation") == operation_type
                     ]
 
                 if contract_category:
                     recent_metrics = [
-                        m for m in recent_metrics
-                        if m.get("labels", {}).get("category") == contract_category
+                        m for m in recent_metrics if m.get("labels", {}).get("category") == contract_category
                     ]
 
                 # Calculate statistics
@@ -193,7 +179,7 @@ class MonitoringEndpoints:
                             "p50": sorted_durations[int(count * 0.5)],
                             "p90": sorted_durations[int(count * 0.9)],
                             "p95": sorted_durations[int(count * 0.95)],
-                            "p99": sorted_durations[int(count * 0.99)]
+                            "p99": sorted_durations[int(count * 0.99)],
                         }
 
                 return {
@@ -201,7 +187,7 @@ class MonitoringEndpoints:
                     "operation_counts": operation_counts,
                     "duration_statistics": duration_stats,
                     "error_rates": error_rates,
-                    "timestamp": datetime.now(timezone.utc).isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Failed to retrieve performance stats: {str(e)}")
@@ -209,7 +195,7 @@ class MonitoringEndpoints:
         @self.app.get(f"{prefix}/errors", response_class=JSONResponse)
         async def get_error_summary(
             time_window_hours: int = Query(24, description="Time window in hours for error analysis"),
-            contract_category: Optional[str] = Query(None, description="Filter by contract category")
+            contract_category: Optional[str] = Query(None, description="Filter by contract category"),
         ):
             """Get error summary and rates."""
             try:
@@ -221,16 +207,12 @@ class MonitoringEndpoints:
                 # Filter by time window
                 cutoff_time = datetime.now(timezone.utc) - timedelta(hours=time_window_hours)
                 recent_events = [
-                    e for e in events
-                    if datetime.fromisoformat(e["timestamp"].replace("Z", "+00:00")) > cutoff_time
+                    e for e in events if datetime.fromisoformat(e["timestamp"].replace("Z", "+00:00")) > cutoff_time
                 ]
 
                 # Apply category filter
                 if contract_category:
-                    recent_events = [
-                        e for e in recent_events
-                        if e.get("contract_category") == contract_category
-                    ]
+                    recent_events = [e for e in recent_events if e.get("contract_category") == contract_category]
 
                 # Calculate error statistics
                 total_events = len(recent_events)
@@ -260,7 +242,7 @@ class MonitoringEndpoints:
                     "errors_by_category": error_by_category,
                     "errors_by_operation": error_by_operation,
                     "recent_errors": failed_events[-10:],  # Last 10 errors
-                    "timestamp": datetime.now(timezone.utc).isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Failed to retrieve error summary: {str(e)}")
@@ -292,7 +274,7 @@ class MonitoringEndpoints:
                     "total_accesses": len(access_events),
                     "contracts_by_category": categories,
                     "contracts_by_version": versions,
-                    "timestamp": datetime.now(timezone.utc).isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Failed to retrieve contract stats: {str(e)}")

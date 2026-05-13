@@ -44,7 +44,7 @@ class ContractGovernorCatalogProvider(CatalogProvider):
             "api_major_version": contract.api_major_version,
             "title": contract.get_contract_title(),
             "description": contract.get_contract_description(),
-            "version": contract.contract_version
+            "version": contract.contract_version,
         }
 
 
@@ -81,7 +81,7 @@ class ContractGovernorContractProvider(ContractProvider):
             "source_service": contract.source_service,
             "stipulation_applied": contract.stipulation_applied,
             "exposed_at": contract.exposed_at.isoformat() if contract.exposed_at else None,
-            "proxy_prefix": contract.proxy_prefix
+            "proxy_prefix": contract.proxy_prefix,
         }
 
 
@@ -105,5 +105,5 @@ class BasicHealthProvider(HealthProvider):
         return {
             "service": "contract-governor",
             "version": "1.0.0",
-            "description": "Contract governance and catalog service"
+            "description": "Contract governance and catalog service",
         }

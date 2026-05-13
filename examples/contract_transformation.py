@@ -143,9 +143,7 @@ def main():
     print("\n--- Paths (after method stripping) ---")
     for path, methods in transformed_contract.get("paths", {}).items():
         if isinstance(methods, dict):
-            remaining_methods = [
-                m.upper() for m in methods.keys() if m != "parameters"
-            ]
+            remaining_methods = [m.upper() for m in methods.keys() if m != "parameters"]
             print(f"  {path}: {', '.join(remaining_methods)}")
 
     # Show injected governance metadata

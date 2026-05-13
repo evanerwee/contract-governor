@@ -5,6 +5,7 @@ This module provides the ContractGovernorFastAPIExtension class which mounts
 contract-driven routes, validation middleware, and documentation endpoints
 onto a FastAPI application.
 """
+
 import importlib
 import inspect
 import logging
@@ -18,16 +19,14 @@ try:
     from fastapi.routing import APIRoute
     from starlette.routing import Route as StarletteRoute
 except ImportError:
-    raise ImportError(
-        "FastAPI is required for this module. "
-        "Install with: pip install contract-governor[server]"
-    )
+    raise ImportError("FastAPI is required for this module. " "Install with: pip install contract-governor[server]")
 
 from ..core.contract_governor import ContractGovernor
 from ..core.models import StipulationConfig
 from ..core.stipulation_processor import StipulationProcessor
 
 logger = logging.getLogger(__name__)
+
 
 def camel_to_snake(name: str) -> str:
     """Convert camelCase to snake_case.
@@ -38,8 +37,10 @@ def camel_to_snake(name: str) -> str:
         listDataPlanes -> list_data_planes
     """
     # Insert underscore before uppercase letters and convert to lowercase
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+
+
 def sort_routes_for_fastapi(paths: dict) -> list:
     """
     Sort OpenAPI paths so static routes come before parameterized routes.
@@ -60,25 +61,21 @@ def sort_routes_for_fastapi(paths: dict) -> list:
         Input order:  ['/files', '/files/{id}', '/files/search']
         Output order: ['/files', '/files/search', '/files/{id}']
     """
+
     def route_priority(path: str) -> tuple:
         """Return a sort key that ranks static path segments before parameterized ones."""
-        segments = path.strip('/').split('/')
+        segments = path.strip("/").split("/")
         # 0 for static segments, 1 for parameterized {xxx} segments
         # This ensures static routes sort before parameterized at each level
-        priority = tuple(1 if '{' in seg else 0 for seg in segments)
+        priority = tuple(1 if "{" in seg else 0 for seg in segments)
         # Sort by: path depth, then static-before-param priority, then alphabetically
         return (len(segments), priority, path)
 
     return sorted(paths.keys(), key=route_priority)
 
 
-
-
-
 def auto_discover_handlers_from_stipulation(
-    stipulation: Dict[str, Any],
-    category: str,
-    logger: logging.Logger | None = None
+    stipulation: Dict[str, Any], category: str, logger: logging.Logger | None = None
 ) -> List[tuple]:
     """
     Auto-discover handlers from a stipulation by introspecting the API class.
@@ -108,8 +105,8 @@ def auto_discover_handlers_from_stipulation(
 
     handlers: list[tuple[str, Any]] = []
 
-    impl_module = stipulation.get('implementation_module')
-    impl_class = stipulation.get('implementation_router_class')
+    impl_module = stipulation.get("implementation_module")
+    impl_class = stipulation.get("implementation_router_class")
 
     if not impl_module or not impl_class:
         logger.warning(f"⚠️ Stipulation missing implementation_module or implementation_router_class for {category}")
@@ -134,7 +131,7 @@ def auto_discover_handlers_from_stipulation(
 
         # Discover all async methods on the API instance
         for attr_name in dir(api_instance):
-            if attr_name.startswith('_'):  # Skip private methods
+            if attr_name.startswith("_"):  # Skip private methods
                 continue
 
             try:
@@ -155,6 +152,7 @@ def auto_discover_handlers_from_stipulation(
     except Exception as e:
         logger.warning(f"⚠️ Failed to auto-discover handlers for {category}: {e}")
         import traceback
+
         logger.debug(traceback.format_exc())
 
     return handlers
@@ -193,13 +191,13 @@ class ContractGovernorFastAPIExtension:
 
         # Track statistics for summary logging
         self._discovery_stats = {
-            'real_implementations': 0,
-            'mock_fallbacks': 0,
-            'registry_lookup': 0,
-            'catalog_guided': 0,
-            'stipulation_guided': 0,
-            'automatic_discovery': 0,
-            'total_routes': 0
+            "real_implementations": 0,
+            "mock_fallbacks": 0,
+            "registry_lookup": 0,
+            "catalog_guided": 0,
+            "stipulation_guided": 0,
+            "automatic_discovery": 0,
+            "total_routes": 0,
         }
         self._mock_routes: list[str] = []  # Track which routes are using mocks
 
@@ -228,7 +226,9 @@ class ContractGovernorFastAPIExtension:
         """
         # Log all contracts that will be mounted
         all_contracts = list(self.governor.list_exposed_contracts())
-        logger.info(f"📋 Mounting {len(all_contracts)} contracts: {[f'{c.category}:{c.api_major_version}' for c in all_contracts]}")
+        logger.info(
+            f"📋 Mounting {len(all_contracts)} contracts: {[f'{c.category}:{c.api_major_version}' for c in all_contracts]}"
+        )
         logger.info("=" * 80)
 
         for exposed in all_contracts:
@@ -262,8 +262,8 @@ class ContractGovernorFastAPIExtension:
                         if not operation_id:
                             logger.warning(f"   ⚠️ No operationId for {method.upper()} {path} - using mock")
                             self._add_mock_route(router, path, method, operation, category, version)
-                            self._discovery_stats['mock_fallbacks'] += 1
-                            self._discovery_stats['total_routes'] += 1
+                            self._discovery_stats["mock_fallbacks"] += 1
+                            self._discovery_stats["total_routes"] += 1
                             self._mock_routes.append(f"{method.upper()} {path} (no operationId)")
                             continue
 
@@ -276,25 +276,33 @@ class ContractGovernorFastAPIExtension:
                         # If not in registry, fall back to stipulation-based discovery
                         if not handler:
                             logger.warning(f"   ❌ Registry lookup failed for operationId '{operation_id}'")
-                            logger.info(f"   📋 Falling back to stipulation-based discovery for category '{category}'...")
+                            logger.info(
+                                f"   📋 Falling back to stipulation-based discovery for category '{category}'..."
+                            )
                             stipulation = self._get_stipulation_for_category(category)
                             if stipulation and isinstance(stipulation, dict):
-                                impl_module = stipulation.get('implementation_module', category)
-                                router_class = stipulation.get('implementation_router_class')
-                                stip_version = stipulation.get('stipulation_version', 'unknown')
-                                stip_id = stipulation.get('stipulation_id', 'unknown')
-                                last_updated = stipulation.get('last_updated', 'unknown')
-                                logger.info(f"   📄 Stipulation: id={stip_id}, v={stip_version}, updated={last_updated}")
+                                impl_module = stipulation.get("implementation_module", category)
+                                router_class = stipulation.get("implementation_router_class")
+                                stip_version = stipulation.get("stipulation_version", "unknown")
+                                stip_id = stipulation.get("stipulation_id", "unknown")
+                                last_updated = stipulation.get("last_updated", "unknown")
+                                logger.info(
+                                    f"   📄 Stipulation: id={stip_id}, v={stip_version}, updated={last_updated}"
+                                )
                                 logger.info(f"   📦 Implementation: module={impl_module}, class={router_class}")
                                 router_obj = self._discover_via_stipulation(impl_module, stipulation)
                                 if router_obj:
                                     versioned_path = self._insert_version_into_path(path, category, version)
-                                    handler = self._find_matching_route(router_obj, versioned_path, method, operation_id)
+                                    handler = self._find_matching_route(
+                                        router_obj, versioned_path, method, operation_id
+                                    )
                                     if handler:
                                         logger.info(f"   ✅ Found via stipulation: {method.upper()} {versioned_path}")
-                                        self._discovery_stats['stipulation_guided'] += 1
+                                        self._discovery_stats["stipulation_guided"] += 1
                                     else:
-                                        logger.warning(f"   ❌ Stipulation router found but no matching route for {method.upper()} {versioned_path}")
+                                        logger.warning(
+                                            f"   ❌ Stipulation router found but no matching route for {method.upper()} {versioned_path}"
+                                        )
                                 else:
                                     logger.warning("   ❌ Failed to instantiate router from stipulation")
                             else:
@@ -304,23 +312,32 @@ class ContractGovernorFastAPIExtension:
                             # Mount with real implementation
                             versioned_path = self._insert_version_into_path(path, category, version)
                             self._mount_real_route(router, versioned_path, method, handler, operation)
-                            self._discovery_stats['real_implementations'] += 1
+                            self._discovery_stats["real_implementations"] += 1
                             # Only count as registry_lookup if it came from registry, not stipulation
-                            if self.governor.implementation_registry is not None and self.governor.implementation_registry.get_handler(operation_id):
-                                self._discovery_stats['registry_lookup'] += 1
-                            self._discovery_stats['total_routes'] += 1
+                            if (
+                                self.governor.implementation_registry is not None
+                                and self.governor.implementation_registry.get_handler(operation_id)
+                            ):
+                                self._discovery_stats["registry_lookup"] += 1
+                            self._discovery_stats["total_routes"] += 1
                             if category:
                                 self._contracts_with_implementations.add(category)
-                                logger.debug(f"   📊 Added '{category}' to implementations set (now {len(self._contracts_with_implementations)} unique)")
+                                logger.debug(
+                                    f"   📊 Added '{category}' to implementations set (now {len(self._contracts_with_implementations)} unique)"
+                                )
                             logger.info(f"   ✅ {method.upper()} {versioned_path} → {operation_id}")
                         else:
                             # No handler found - use mock
                             versioned_path = self._insert_version_into_path(path, category, version)
                             self._add_mock_route(router, versioned_path, method, operation, category, version)
-                            self._discovery_stats['mock_fallbacks'] += 1
-                            self._discovery_stats['total_routes'] += 1
-                            self._mock_routes.append(f"{method.upper()} {versioned_path} (no handler for {operation_id})")
-                            logger.warning(f"   ⚠️ {method.upper()} {versioned_path} → Mock (no handler for {operation_id})")
+                            self._discovery_stats["mock_fallbacks"] += 1
+                            self._discovery_stats["total_routes"] += 1
+                            self._mock_routes.append(
+                                f"{method.upper()} {versioned_path} (no handler for {operation_id})"
+                            )
+                            logger.warning(
+                                f"   ⚠️ {method.upper()} {versioned_path} → Mock (no handler for {operation_id})"
+                            )
 
     def _generate_router_via_discovery(self, router: APIRouter) -> None:
         """
@@ -351,12 +368,7 @@ class ContractGovernorFastAPIExtension:
                         self._add_route(router, versioned_path, method, path_item[method], category, original_path=path)
 
     def _mount_real_route(
-        self,
-        router: APIRouter,
-        path: str,
-        method: str,
-        handler: Callable[..., Any],
-        operation: dict
+        self, router: APIRouter, path: str, method: str, handler: Callable[..., Any], operation: dict
     ) -> None:
         """
         Mount a route with a real implementation handler.
@@ -372,13 +384,7 @@ class ContractGovernorFastAPIExtension:
         getattr(router, method)(path)(handler)
 
     def _add_mock_route(
-        self,
-        router: APIRouter,
-        path: str,
-        method: str,
-        operation: dict,
-        category: str,
-        version: str
+        self, router: APIRouter, path: str, method: str, operation: dict, category: str, version: str
     ) -> None:
         """
         Mount a route with a mock fallback handler.
@@ -391,6 +397,7 @@ class ContractGovernorFastAPIExtension:
             category: API category
             version: API version
         """
+
         async def mock_handler(request: Request):
             """Return a mock JSON response derived from the OpenAPI operation examples."""
             responses = operation.get("responses", {})
@@ -400,19 +407,29 @@ class ContractGovernorFastAPIExtension:
             if example:
                 return JSONResponse(content=example)
 
-            return JSONResponse(content={
-                "message": f"Mock response for {path}",
-                "method": method.upper(),
-                "category": category,
-                "version": version,
-                "note": "This is a mock response - no handler registered"
-            })
+            return JSONResponse(
+                content={
+                    "message": f"Mock response for {path}",
+                    "method": method.upper(),
+                    "category": category,
+                    "version": version,
+                    "note": "This is a mock response - no handler registered",
+                }
+            )
 
         getattr(router, method)(path)(mock_handler)
 
-    def _add_route(self, router: APIRouter, path: str, method: str, operation: dict, category: str | None = None, original_path: str | None = None):
+    def _add_route(
+        self,
+        router: APIRouter,
+        path: str,
+        method: str,
+        operation: dict,
+        category: str | None = None,
+        original_path: str | None = None,
+    ):
         """Add single route to FastAPI router with full stipulation support."""
-        self._discovery_stats['total_routes'] += 1
+        self._discovery_stats["total_routes"] += 1
 
         # Use original contract path for discovery (before transformation)
         # This ensures we match against the router's actual path structure
@@ -421,29 +438,37 @@ class ContractGovernorFastAPIExtension:
         # Try to discover real implementation first
         discovery_result = self._discover_implementation_with_metadata(discovery_path, method, category)
 
-        if discovery_result['handler']:
+        if discovery_result["handler"]:
             # Use real implementation
-            getattr(router, method)(path)(discovery_result['handler'])
-            self._discovery_stats['real_implementations'] += 1
+            getattr(router, method)(path)(discovery_result["handler"])
+            self._discovery_stats["real_implementations"] += 1
 
             # Track that this contract has at least one real implementation
             if category:
                 self._contracts_with_implementations.add(category)
-                logger.debug(f"   📊 Added '{category}' to implementations set (now {len(self._contracts_with_implementations)} unique)")
+                logger.debug(
+                    f"   📊 Added '{category}' to implementations set (now {len(self._contracts_with_implementations)} unique)"
+                )
 
             # Track discovery method
-            if discovery_result['method'] == 'catalog':
-                self._discovery_stats['catalog_guided'] += 1
-                logger.info(f"✅ {method.upper()} {path} → Real implementation (catalog-guided: {discovery_result['source']})")
-            elif discovery_result['method'] == 'stipulation':
-                self._discovery_stats['stipulation_guided'] += 1
-                logger.info(f"✅ {method.upper()} {path} → Real implementation (stipulation-guided: {discovery_result['source']})")
+            if discovery_result["method"] == "catalog":
+                self._discovery_stats["catalog_guided"] += 1
+                logger.info(
+                    f"✅ {method.upper()} {path} → Real implementation (catalog-guided: {discovery_result['source']})"
+                )
+            elif discovery_result["method"] == "stipulation":
+                self._discovery_stats["stipulation_guided"] += 1
+                logger.info(
+                    f"✅ {method.upper()} {path} → Real implementation (stipulation-guided: {discovery_result['source']})"
+                )
             else:
-                self._discovery_stats['automatic_discovery'] += 1
-                logger.info(f"✅ {method.upper()} {path} → Real implementation (auto-discovered: {discovery_result['source']})")
+                self._discovery_stats["automatic_discovery"] += 1
+                logger.info(
+                    f"✅ {method.upper()} {path} → Real implementation (auto-discovered: {discovery_result['source']})"
+                )
         else:
             # Fall back to mock response from OpenAPI spec
-            self._discovery_stats['mock_fallbacks'] += 1
+            self._discovery_stats["mock_fallbacks"] += 1
             self._mock_routes.append(f"{method.upper()} {path} ({discovery_result['reason']})")
 
             async def handler(request: Request):
@@ -455,12 +480,14 @@ class ContractGovernorFastAPIExtension:
                 if example:
                     return JSONResponse(content=example)
 
-                return JSONResponse(content={
-                    "message": f"Success from {path}",
-                    "method": method.upper(),
-                    "governed": True,
-                    "stipulation_applied": True
-                })
+                return JSONResponse(
+                    content={
+                        "message": f"Success from {path}",
+                        "method": method.upper(),
+                        "governed": True,
+                        "stipulation_applied": True,
+                    }
+                )
 
             getattr(router, method)(path)(handler)
             logger.warning(f"⚠️ {method.upper()} {path} → Mock fallback (reason: {discovery_result['reason']})")
@@ -475,7 +502,7 @@ class ContractGovernorFastAPIExtension:
         Returns:
             Category name (e.g., dataplane-registration)
         """
-        path_parts = path.strip('/').split('/')
+        path_parts = path.strip("/").split("/")
         if len(path_parts) >= 1:
             return path_parts[0]
         return ""
@@ -496,11 +523,11 @@ class ContractGovernorFastAPIExtension:
 
         if stipulation:
             # Convert StipulationConfig to dict if needed
-            if hasattr(stipulation, '__dict__'):
+            if hasattr(stipulation, "__dict__"):
                 return {
-                    'implementation_module': getattr(stipulation, 'implementation_module', None),
-                    'implementation_router_class': getattr(stipulation, 'implementation_router_class', None),
-                    'stipulation_id': getattr(stipulation, 'stipulation_id', stipulation_id)
+                    "implementation_module": getattr(stipulation, "implementation_module", None),
+                    "implementation_router_class": getattr(stipulation, "implementation_router_class", None),
+                    "stipulation_id": getattr(stipulation, "stipulation_id", stipulation_id),
                 }
             return stipulation
 
@@ -517,10 +544,10 @@ class ContractGovernorFastAPIExtension:
             result: /component/v1/registration/versions/{api_version}/instances
         """
         # If path already starts with category, insert version after it
-        if path.startswith(f'/{category}/'):
-            return f'/{category}/{version}' + path[len(f'/{category}'):]
+        if path.startswith(f"/{category}/"):
+            return f"/{category}/{version}" + path[len(f"/{category}") :]
         # Otherwise prepend category/version
-        return f'/{category}/{version}{path}'
+        return f"/{category}/{version}{path}"
 
     def _normalize_paths_for_matching(self, contract_path: str, router_path: str) -> bool:
         """
@@ -539,16 +566,16 @@ class ContractGovernorFastAPIExtension:
             True if paths match after normalization
         """
         # Strip version from contract path: /prompts/v1/upload -> /prompts/upload
-        parts = contract_path.strip('/').split('/')
-        if len(parts) >= 2 and parts[1].startswith('v'):
+        parts = contract_path.strip("/").split("/")
+        if len(parts) >= 2 and parts[1].startswith("v"):
             # Remove version part: ['prompts', 'v1', 'upload'] -> ['prompts', 'upload']
-            normalized_contract = '/' + '/'.join([parts[0]] + parts[2:])
+            normalized_contract = "/" + "/".join([parts[0]] + parts[2:])
         else:
             normalized_contract = contract_path
 
         # Normalize both paths for comparison
-        normalized_contract = normalized_contract.rstrip('/')
-        normalized_router = router_path.rstrip('/')
+        normalized_contract = normalized_contract.rstrip("/")
+        normalized_router = router_path.rstrip("/")
 
         return normalized_contract == normalized_router
 
@@ -572,12 +599,7 @@ class ContractGovernorFastAPIExtension:
         if not category:
             category = self._extract_category_from_path(path)
         if not category:
-            return {
-                'handler': None,
-                'method': 'none',
-                'source': None,
-                'reason': 'Could not extract category from path'
-            }
+            return {"handler": None, "method": "none", "source": None, "reason": "Could not extract category from path"}
 
         # PRIORITY 1: Check API Catalog first (authoritative source)
         logger.info(f"🔍 [{category}] Checking catalog for {method.upper()} {path}")
@@ -591,10 +613,10 @@ class ContractGovernorFastAPIExtension:
                 if handler:
                     logger.info(f"   🎉 CATALOG SUCCESS: {method.upper()} {path} → {catalog_impl['class_name']}")
                     return {
-                        'handler': handler,
-                        'method': 'catalog',
-                        'source': f"API Catalog: {catalog_impl['class_name']}",
-                        'reason': None
+                        "handler": handler,
+                        "method": "catalog",
+                        "source": f"API Catalog: {catalog_impl['class_name']}",
+                        "reason": None,
                     }
                 else:
                     logger.warning(f"   ⚠️ Router found but no matching route for {method.upper()} {path}")
@@ -608,20 +630,20 @@ class ContractGovernorFastAPIExtension:
 
         # Determine implementation module
         impl_module = category
-        if stipulation and isinstance(stipulation, dict) and stipulation.get('implementation_module'):
-            impl_module = stipulation['implementation_module']
+        if stipulation and isinstance(stipulation, dict) and stipulation.get("implementation_module"):
+            impl_module = stipulation["implementation_module"]
 
         # Try stipulation-guided discovery
-        if stipulation and isinstance(stipulation, dict) and stipulation.get('implementation_router_class'):
+        if stipulation and isinstance(stipulation, dict) and stipulation.get("implementation_router_class"):
             router_obj = self._discover_via_stipulation(impl_module, stipulation)
             if router_obj:
                 handler = self._find_matching_route(router_obj, path, method, operation_id=None)
                 if handler:
                     return {
-                        'handler': handler,
-                        'method': 'stipulation',
-                        'source': stipulation['implementation_router_class'],
-                        'reason': None
+                        "handler": handler,
+                        "method": "stipulation",
+                        "source": stipulation["implementation_router_class"],
+                        "reason": None,
                     }
                 else:
                     logger.debug(f"Stipulation found router but no matching route for {method.upper()} {path}")
@@ -631,22 +653,17 @@ class ContractGovernorFastAPIExtension:
         if router_obj:
             handler = self._find_matching_route(router_obj, path, method, operation_id=None)
             if handler:
-                return {
-                    'handler': handler,
-                    'method': 'automatic',
-                    'source': f"{impl_module} module",
-                    'reason': None
-                }
+                return {"handler": handler, "method": "automatic", "source": f"{impl_module} module", "reason": None}
 
         # No implementation found
         logger.warning(f"   🚫 MOCK FALLBACK: No implementation found for {method.upper()} {path}")
         logger.warning(f"      Category: {category}")
         logger.warning("      Tried: catalog → stipulation → patterns")
         return {
-            'handler': None,
-            'method': 'none',
-            'source': None,
-            'reason': f"No implementation found via catalog, stipulation, or patterns for {category}"
+            "handler": None,
+            "method": "none",
+            "source": None,
+            "reason": f"No implementation found via catalog, stipulation, or patterns for {category}",
         }
 
     def _log_discovery_summary(self):
@@ -660,7 +677,9 @@ class ContractGovernorFastAPIExtension:
             logger.info("📊 Contract-Governor Discovery Summary (DEPRECATED)")
         logger.info("=" * 80)
         logger.info(f"Total routes processed: {stats['total_routes']}")
-        logger.info(f"✅ Real implementations: {stats['real_implementations']} ({stats['real_implementations']/max(stats['total_routes'], 1)*100:.1f}%)")
+        logger.info(
+            f"✅ Real implementations: {stats['real_implementations']} ({stats['real_implementations']/max(stats['total_routes'], 1)*100:.1f}%)"
+        )
 
         if self._use_proper_architecture:
             logger.info(f"   📋 Registry lookup: {stats['registry_lookup']}")
@@ -670,7 +689,9 @@ class ContractGovernorFastAPIExtension:
             logger.info(f"   🎯 Stipulation-guided: {stats['stipulation_guided']}")
             logger.info(f"   🔍 Auto-discovered: {stats['automatic_discovery']}")
 
-        logger.info(f"⚠️ Mock fallbacks: {stats['mock_fallbacks']} ({stats['mock_fallbacks']/max(stats['total_routes'], 1)*100:.1f}%)")
+        logger.info(
+            f"⚠️ Mock fallbacks: {stats['mock_fallbacks']} ({stats['mock_fallbacks']/max(stats['total_routes'], 1)*100:.1f}%)"
+        )
         if self._mock_routes:
             logger.warning("   Mock routes:")
             for mock_route in self._mock_routes:
@@ -680,13 +701,15 @@ class ContractGovernorFastAPIExtension:
         logger.info("=" * 80)
 
         # Success message
-        if stats['mock_fallbacks'] == 0:
+        if stats["mock_fallbacks"] == 0:
             logger.info("🎉 SUCCESS: 100% real implementations!")
-        elif self._use_proper_architecture and stats['registry_lookup'] > 0 and stats.get('stipulation_guided', 0) > 0:
-            logger.info(f"🎉 HYBRID SUCCESS: {stats['registry_lookup']} via Registry + {stats.get('stipulation_guided', 0)} via Stipulation")
+        elif self._use_proper_architecture and stats["registry_lookup"] > 0 and stats.get("stipulation_guided", 0) > 0:
+            logger.info(
+                f"🎉 HYBRID SUCCESS: {stats['registry_lookup']} via Registry + {stats.get('stipulation_guided', 0)} via Stipulation"
+            )
 
         # Diagnostic warnings
-        if stats['mock_fallbacks'] > stats['real_implementations']:
+        if stats["mock_fallbacks"] > stats["real_implementations"]:
             logger.warning("🚨 HIGH MOCK FALLBACK RATE DETECTED!")
             if self._use_proper_architecture:
                 logger.warning("   Register missing handlers in Implementation Registry")
@@ -709,18 +732,18 @@ class ContractGovernorFastAPIExtension:
         Returns:
             APIRouter instance if found, None otherwise
         """
-        module_path = catalog_impl['module_path']
-        class_name = catalog_impl['class_name']
+        module_path = catalog_impl["module_path"]
+        class_name = catalog_impl["class_name"]
 
         try:
-            module = __import__(module_path, fromlist=[''])
+            module = __import__(module_path, fromlist=[""])
 
             if hasattr(module, class_name):
                 router_class = getattr(module, class_name)
 
                 # Handle both class-based and function-based routers
                 if callable(router_class):
-                    factory = self.governor.factory if hasattr(self.governor, 'factory') else None
+                    factory = self.governor.factory if hasattr(self.governor, "factory") else None
 
                     # Try with factory parameter first
                     try:
@@ -731,13 +754,13 @@ class ContractGovernorFastAPIExtension:
                             logger.info(f"📚 Catalog discovery: {class_name}(factory) returned APIRouter")
                             return result
                         # Check if result has get_router() method
-                        elif hasattr(result, 'get_router'):
+                        elif hasattr(result, "get_router"):
                             # Safe cast: get_router() convention always returns APIRouter
                             router_obj = cast(APIRouter, result.get_router())
                             logger.info(f"📚 Catalog discovery: {class_name}(factory).get_router()")
                             return router_obj
                         # Check if result has router attribute
-                        elif hasattr(result, 'router'):
+                        elif hasattr(result, "router"):
                             # Safe cast: .router attribute convention always holds APIRouter
                             router_obj = cast(APIRouter, result.router)
                             logger.info(f"📚 Catalog discovery: {class_name}(factory).router")
@@ -752,13 +775,13 @@ class ContractGovernorFastAPIExtension:
                                 logger.info(f"📚 Catalog discovery: {class_name}() returned APIRouter")
                                 return result
                             # Check if result has get_router() method
-                            elif hasattr(result, 'get_router'):
+                            elif hasattr(result, "get_router"):
                                 # Safe cast: get_router() convention always returns APIRouter
                                 router_obj = cast(APIRouter, result.get_router())
                                 logger.info(f"📚 Catalog discovery: {class_name}().get_router()")
                                 return router_obj
                             # Check if result has router attribute
-                            elif hasattr(result, 'router'):
+                            elif hasattr(result, "router"):
                                 # Safe cast: .router attribute convention always holds APIRouter
                                 router_obj = cast(APIRouter, result.router)
                                 logger.info(f"📚 Catalog discovery: {class_name}().router")
@@ -784,8 +807,8 @@ class ContractGovernorFastAPIExtension:
         Returns:
             APIRouter instance if found, None otherwise
         """
-        router_class_name = stipulation.get('implementation_router_class')
-        stip_impl_module = stipulation.get('implementation_module')
+        router_class_name = stipulation.get("implementation_router_class")
+        stip_impl_module = stipulation.get("implementation_module")
 
         if not router_class_name:
             logger.error("❌ Stipulation missing 'implementation_router_class' field")
@@ -798,7 +821,7 @@ class ContractGovernorFastAPIExtension:
         # Try multiple module path strategies for compatibility
         module_paths_to_try = [
             stip_impl_module,  # Try AS-IS first (for full paths like ai4triage.data_plane.*)
-            f"ai4triage.control_plane.{stip_impl_module}"  # Fallback to prefixed (for short paths like authentication.api.*)
+            f"ai4triage.control_plane.{stip_impl_module}",  # Fallback to prefixed (for short paths like authentication.api.*)
         ]
 
         logger.info(f"   📦 Attempting to load: {router_class_name}")
@@ -807,7 +830,7 @@ class ContractGovernorFastAPIExtension:
         module_path = None
         for path_attempt in module_paths_to_try:
             try:
-                module = __import__(path_attempt, fromlist=[''])
+                module = __import__(path_attempt, fromlist=[""])
                 module_path = path_attempt
                 break
             except ImportError as e:
@@ -822,7 +845,7 @@ class ContractGovernorFastAPIExtension:
             logger.info(f"   ✅ Module loaded: {module_path}")
 
             # ENHANCED DEBUG LOGGING
-            available_items = [x for x in dir(module) if not x.startswith('_')]
+            available_items = [x for x in dir(module) if not x.startswith("_")]
 
             if not hasattr(module, router_class_name):
                 logger.error(f"   ❌ Class '{router_class_name}' not found in {module_path}")
@@ -831,7 +854,7 @@ class ContractGovernorFastAPIExtension:
                 logger.error(f"   📋 Module contains: {available_items}")
 
                 # Check for similar names
-                similar = [x for x in available_items if 'router' in x.lower() or 'api' in x.lower()]
+                similar = [x for x in available_items if "router" in x.lower() or "api" in x.lower()]
                 if similar:
                     logger.error(f"   💡 HINT: Found similar names: {similar}")
                     logger.error("   💡 HINT: Update stipulation to use one of these names")
@@ -842,12 +865,12 @@ class ContractGovernorFastAPIExtension:
             logger.info(f"   ✅ Class found: {router_class_name}")
 
             # Try calling with factory parameter first
-            factory = self.governor.factory if hasattr(self.governor, 'factory') else None
+            factory = self.governor.factory if hasattr(self.governor, "factory") else None
 
             # Get category and version from stipulation
-            stip_id = stipulation.get('stipulation_id', '')
-            category = stip_id.split(':')[0] if ':' in stip_id else stip_id
-            version = stip_id.split(':')[1] if ':' in stip_id else 'v1'
+            stip_id = stipulation.get("stipulation_id", "")
+            category = stip_id.split(":")[0] if ":" in stip_id else stip_id
+            version = stip_id.split(":")[1] if ":" in stip_id else "v1"
             prefix = f"/{category}"
 
             try:
@@ -857,12 +880,12 @@ class ContractGovernorFastAPIExtension:
                 if isinstance(result, APIRouter):
                     logger.info(f"   ✅ {router_class_name}(factory, prefix) → APIRouter")
                     return result
-                elif hasattr(result, 'get_router'):
+                elif hasattr(result, "get_router"):
                     # Safe cast: get_router() convention always returns APIRouter
                     router_obj = cast(APIRouter, result.get_router())
                     logger.info(f"   ✅ {router_class_name}(factory, prefix).get_router() → APIRouter")
                     return router_obj
-                elif hasattr(result, 'router'):
+                elif hasattr(result, "router"):
                     # Safe cast: .router attribute convention always holds APIRouter
                     router_obj = cast(APIRouter, result.router)
                     logger.info(f"   ✅ {router_class_name}(factory, prefix).router → APIRouter")
@@ -875,12 +898,12 @@ class ContractGovernorFastAPIExtension:
                     if isinstance(result, APIRouter):
                         logger.info(f"   ✅ {router_class_name}(factory) → APIRouter")
                         return result
-                    elif hasattr(result, 'get_router'):
+                    elif hasattr(result, "get_router"):
                         # Safe cast: get_router() convention always returns APIRouter
                         router_obj = cast(APIRouter, result.get_router())
                         logger.info(f"   ✅ {router_class_name}(factory).get_router() → APIRouter")
                         return router_obj
-                    elif hasattr(result, 'router'):
+                    elif hasattr(result, "router"):
                         # Safe cast: .router attribute convention always holds APIRouter
                         router_obj = cast(APIRouter, result.router)
                         logger.info(f"   ✅ {router_class_name}(factory).router → APIRouter")
@@ -892,12 +915,12 @@ class ContractGovernorFastAPIExtension:
                     if isinstance(result, APIRouter):
                         logger.info(f"   ✅ {router_class_name}() → APIRouter")
                         return result
-                    elif hasattr(result, 'get_router'):
+                    elif hasattr(result, "get_router"):
                         # Safe cast: get_router() convention always returns APIRouter
                         router_obj = cast(APIRouter, result.get_router())
                         logger.info(f"   ✅ {router_class_name}().get_router() → APIRouter")
                         return router_obj
-                    elif hasattr(result, 'router'):
+                    elif hasattr(result, "router"):
                         # Safe cast: .router attribute convention always holds APIRouter
                         router_obj = cast(APIRouter, result.router)
                         logger.info(f"   ✅ {router_class_name}().router → APIRouter")
@@ -918,12 +941,11 @@ class ContractGovernorFastAPIExtension:
         except Exception as e:
             logger.error(f"   ❌ Unexpected error loading {router_class_name}: {e}")
             import traceback
+
             logger.debug(traceback.format_exc())
             return None
 
         return None
-
-
 
     def _discover_via_patterns(self, impl_module: str) -> APIRouter | None:
         """
@@ -950,12 +972,12 @@ class ContractGovernorFastAPIExtension:
             # Fallback to prefixed paths (for short paths like authentication, authorization, etc.)
             f"ai4triage.control_plane.{impl_module}.api.endpoints",
             f"ai4triage.control_plane.{impl_module}.api.registration_router",
-            f"ai4triage.control_plane.{impl_module}.api"
+            f"ai4triage.control_plane.{impl_module}.api",
         ]
 
         for module_path in module_paths:
             try:
-                module = __import__(module_path, fromlist=[''])
+                module = __import__(module_path, fromlist=[""])
 
                 # Pattern 1: {Module}API class with get_router() method
                 api_class_name = f"{impl_module.title()}API"
@@ -963,7 +985,7 @@ class ContractGovernorFastAPIExtension:
                     try:
                         api_class = getattr(module, api_class_name)
                         api_instance = api_class()
-                        if hasattr(api_instance, 'get_router'):
+                        if hasattr(api_instance, "get_router"):
                             # Safe cast: get_router() convention always returns APIRouter
                             router_obj = cast(APIRouter, api_instance.get_router())
                             logger.info(f"🔍 Pattern discovery: Found {api_class_name}.get_router() in {module_path}")
@@ -1015,9 +1037,9 @@ class ContractGovernorFastAPIExtension:
         logger.debug(f"⚠️ No router found using automatic patterns for module: {impl_module}")
         return None
 
-
-
-    def _find_matching_route(self, router: 'APIRouter', contract_path: str, method: str, operation_id: str | None = None) -> Callable[..., Any] | None:
+    def _find_matching_route(
+        self, router: "APIRouter", contract_path: str, method: str, operation_id: str | None = None
+    ) -> Callable[..., Any] | None:
         """
         Find matching route in discovered router.
 
@@ -1045,11 +1067,15 @@ class ContractGovernorFastAPIExtension:
                 for route in router.routes:
                     if not isinstance(route, (APIRoute, StarletteRoute)):
                         continue
-                    endpoint_name = route.endpoint.__name__ if hasattr(route.endpoint, '__name__') else str(route.endpoint)
+                    endpoint_name = (
+                        route.endpoint.__name__ if hasattr(route.endpoint, "__name__") else str(route.endpoint)
+                    )
 
                     # Match by function name and HTTP method
                     if route.methods and endpoint_name == snake_case_name and method.upper() in route.methods:
-                        logger.info(f"   ✅ Matched by operationId: {operation_id} -> {snake_case_name}() on {route.path}")
+                        logger.info(
+                            f"   ✅ Matched by operationId: {operation_id} -> {snake_case_name}() on {route.path}"
+                        )
                         return route.endpoint
 
             # Fall back to path matching
@@ -1059,7 +1085,9 @@ class ContractGovernorFastAPIExtension:
                 route_path = route.path
                 path_match = self._normalize_paths_for_matching(contract_path, route_path)
 
-                logger.debug(f"   Comparing: contract={contract_path} vs router={route_path}, match={path_match}, methods={list(route.methods or set())}")
+                logger.debug(
+                    f"   Comparing: contract={contract_path} vs router={route_path}, match={path_match}, methods={list(route.methods or set())}"
+                )
 
                 # Use path normalization helper to handle prefix differences
                 if path_match:
@@ -1068,21 +1096,28 @@ class ContractGovernorFastAPIExtension:
                         logger.info(f"✅ Matched by path: {method.upper()} {contract_path} -> {route_path}")
                         return route.endpoint
                     else:
-                        logger.debug(f"   Path matched but method mismatch: need {method.upper()}, have {list(route.methods or set())}")
+                        logger.debug(
+                            f"   Path matched but method mismatch: need {method.upper()}, have {list(route.methods or set())}"
+                        )
 
             # Log all available routes if no match
             available = [
-                (r.path, list(r.methods or set()), r.endpoint.__name__ if hasattr(r.endpoint, '__name__') else 'unknown')
+                (
+                    r.path,
+                    list(r.methods or set()),
+                    r.endpoint.__name__ if hasattr(r.endpoint, "__name__") else "unknown",
+                )
                 for r in router.routes
                 if isinstance(r, (APIRoute, StarletteRoute))
             ]
             logger.warning(f"   ❌ No match for {method.upper()} {contract_path}")
             if operation_id:
-                logger.warning(f"      Searched for: operationId='{operation_id}' -> function='{camel_to_snake(operation_id)}'")
+                logger.warning(
+                    f"      Searched for: operationId='{operation_id}' -> function='{camel_to_snake(operation_id)}'"
+                )
             logger.warning(f"      Available routes: {available}")
 
         except Exception as e:
             logger.error(f"Error matching routes: {e}")
 
         return None
-

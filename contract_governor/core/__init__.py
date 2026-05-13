@@ -47,5 +47,5 @@ __all__ = [
     "ValidationWarning",
     "TransformContext",
     "VersionInfo",
-    "AuditMetadata"
+    "AuditMetadata",
 ]

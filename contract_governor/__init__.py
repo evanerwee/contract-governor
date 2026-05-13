@@ -27,5 +27,5 @@ __all__ = [
     "ExposedContractRecord",
     "ValidationResult",
     "TransformContext",
-    "VersionInfo"
+    "VersionInfo",
 ]

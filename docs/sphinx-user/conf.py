@@ -1,14 +1,13 @@
 """Sphinx configuration for Contract Governor User Documentation."""
 
-
 project = "Contract Governor — User Guide"
 copyright = "2026, Evan Erwee"
 author = "Evan Erwee"
 release = "1.3.144"
 
 extensions = [
-    "myst_parser",              # Parse .md files
-    "sphinx.ext.intersphinx",   # Cross-reference developer docs
+    "myst_parser",  # Parse .md files
+    "sphinx.ext.intersphinx",  # Cross-reference developer docs
 ]
 
 # MyST (Markdown) settings

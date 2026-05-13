@@ -37,12 +37,12 @@ class DISetup:
             config: Configuration dictionary with service definitions
         """
         # Register services from configuration
-        services_config = config.get('services', {})
+        services_config = config.get("services", {})
         for service_name, service_config in services_config.items():
             self._register_service_from_config(service_name, service_config)
 
         # Auto-discover and register injectable classes
-        if config.get('auto_discover', True):
+        if config.get("auto_discover", True):
             self._auto_register_injectable_classes()
 
     def setup_from_file(self, config_path: str) -> None:
@@ -61,11 +61,11 @@ class DISetup:
         if not config_file.exists():
             raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
-        if config_file.suffix.lower() == '.json':
-            with open(config_file, 'r') as f:
+        if config_file.suffix.lower() == ".json":
+            with open(config_file, "r") as f:
                 config = json.load(f)
-        elif config_file.suffix.lower() in ['.yml', '.yaml']:
-            with open(config_file, 'r') as f:
+        elif config_file.suffix.lower() in [".yml", ".yaml"]:
+            with open(config_file, "r") as f:
                 config = yaml.safe_load(f)
         else:
             raise ValueError(f"Unsupported configuration file format: {config_file.suffix}")
@@ -74,10 +74,10 @@ class DISetup:
 
     def _register_service_from_config(self, service_name: str, service_config: Dict[str, Any]) -> None:
         """Register a service from configuration."""
-        interface_path = service_config['interface']
-        implementation_path = service_config['implementation']
-        scope = Scope(service_config.get('scope', 'singleton'))
-        name = service_config.get('name')
+        interface_path = service_config["interface"]
+        implementation_path = service_config["implementation"]
+        scope = Scope(service_config.get("scope", "singleton"))
+        name = service_config.get("name")
 
         # Import interface and implementation
         interface = self._import_class(interface_path)
@@ -92,8 +92,8 @@ class DISetup:
             implementation=implementation,
             name=name,
             scope=scope.value,
-            metadata=service_config.get('metadata', {}),
-            tags=service_config.get('tags', [])
+            metadata=service_config.get("metadata", {}),
+            tags=service_config.get("tags", []),
         )
 
     def _auto_register_injectable_classes(self) -> None:
@@ -101,10 +101,10 @@ class DISetup:
         injectable_classes = get_injectable_classes()
 
         for cls, metadata in injectable_classes.items():
-            interface = metadata['interface']
-            scope = Scope(metadata['scope'])
-            name = metadata['name']
-            tags = metadata['tags']
+            interface = metadata["interface"]
+            scope = Scope(metadata["scope"])
+            name = metadata["name"]
+            tags = metadata["tags"]
 
             # Register with container
             self.container.register(interface, cls, scope, name)
@@ -115,13 +115,13 @@ class DISetup:
                 implementation=cls,
                 name=name,
                 scope=scope.value,
-                metadata={'auto_discovered': True},
-                tags=tags
+                metadata={"auto_discovered": True},
+                tags=tags,
             )
 
     def _import_class(self, class_path: str) -> type:
         """Import a class from its full path."""
-        module_name, class_name = class_path.rsplit('.', 1)
+        module_name, class_name = class_path.rsplit(".", 1)
         module = importlib.import_module(module_name)
         # Safe cast: getattr on a module returns the named attribute which is always a class
         # here, since callers only pass fully-qualified class paths (interface/implementation).
@@ -151,10 +151,10 @@ def create_default_setup() -> DISetup:
 
     # Default configuration
     default_config = {
-        'services': {
+        "services": {
             # Core services would be defined here
         },
-        'auto_discover': True
+        "auto_discover": True,
     }
 
     setup.setup_from_config(default_config)

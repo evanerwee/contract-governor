@@ -4,6 +4,7 @@ Stipulation Processor for contract template expansion and variable substitution.
 This module provides the StipulationProcessor class which handles stipulation-driven
 transformations including multi-tenant template expansion and variable discovery.
 """
+
 import logging
 from typing import Any, Dict, List, Optional, cast
 
@@ -15,6 +16,7 @@ from .template_models import (
 )
 
 logger = logging.getLogger(__name__)
+
 
 class StipulationProcessor:
     """Processes stipulation transformations with variable substitution."""
@@ -35,24 +37,26 @@ class StipulationProcessor:
                 return f"/{category}/{version}{path}"
 
             # Debug logging
-            logger.debug(f"Processing stipulation for {category}:{version}, proxy_prefix_format: {getattr(stipulation, 'proxy_prefix_format', 'NOT_FOUND')}")
+            logger.debug(
+                f"Processing stipulation for {category}:{version}, proxy_prefix_format: {getattr(stipulation, 'proxy_prefix_format', 'NOT_FOUND')}"
+            )
 
             # Apply proxy_prefix_format with variable substitution
-            if hasattr(stipulation, 'proxy_prefix_format') and stipulation.proxy_prefix_format is not None:
-                prefix = stipulation.proxy_prefix_format.strip('/')
+            if hasattr(stipulation, "proxy_prefix_format") and stipulation.proxy_prefix_format is not None:
+                prefix = stipulation.proxy_prefix_format.strip("/")
 
                 # Variable substitution support
                 variables = {
-                    'category': category,
-                    'version': version,
-                    'api_major': version.split('.')[0] if '.' in version else version,
-                    'tenant_id': '{tenant_id}',  # Preserve for runtime
-                    'user_id': '{user_id}',      # Preserve for runtime
+                    "category": category,
+                    "version": version,
+                    "api_major": version.split(".")[0] if "." in version else version,
+                    "tenant_id": "{tenant_id}",  # Preserve for runtime
+                    "user_id": "{user_id}",  # Preserve for runtime
                 }
 
                 # Apply variable substitution
                 for var, value in variables.items():
-                    prefix = prefix.replace(f'{{{var}}}', value)
+                    prefix = prefix.replace(f"{{{var}}}", value)
 
                 # Ensure we have a valid prefix
                 if prefix:
@@ -70,9 +74,10 @@ class StipulationProcessor:
             clean_path = path
             # Remove common prefix patterns like /auth/v1, /v1, etc.
             import re
-            clean_path = re.sub(r'^/[^/]+/v\d+', '', path)  # Remove /xxx/v1 prefix
-            if not clean_path.startswith('/'):
-                clean_path = '/' + clean_path
+
+            clean_path = re.sub(r"^/[^/]+/v\d+", "", path)  # Remove /xxx/v1 prefix
+            if not clean_path.startswith("/"):
+                clean_path = "/" + clean_path
             fallback = f"/{category}/{version}{clean_path}"
             logger.debug(f"Using fallback prefix for {category}:{version}: {fallback}")
             return fallback
@@ -85,7 +90,7 @@ class StipulationProcessor:
         """Check if method is forbidden by stipulation."""
         try:
             stipulation = self.governor.get_stipulation_for_contract(category, version)
-            if stipulation and hasattr(stipulation, 'forbid_methods'):
+            if stipulation and hasattr(stipulation, "forbid_methods"):
                 return method.upper() in [m.upper() for m in stipulation.forbid_methods]
             return False
         except Exception:
@@ -95,7 +100,7 @@ class StipulationProcessor:
         """Get stipulation metadata block."""
         try:
             stipulation = self.governor.get_stipulation_for_contract(category, version)
-            if stipulation and hasattr(stipulation, 'metadata_block'):
+            if stipulation and hasattr(stipulation, "metadata_block"):
                 # Safe: metadata_block is always a dict when present on a stipulation
                 return cast(Dict[str, Any], stipulation.metadata_block)
             return None
@@ -106,7 +111,7 @@ class StipulationProcessor:
         """Check if contract should be visible in catalog."""
         try:
             stipulation = self.governor.get_stipulation_for_contract(category, version)
-            if stipulation and hasattr(stipulation, 'catalog_default_visible'):
+            if stipulation and hasattr(stipulation, "catalog_default_visible"):
                 # Safe: catalog_default_visible is always a bool on stipulation configs
                 return cast(bool, stipulation.catalog_default_visible)
             return True  # Default to visible
@@ -117,7 +122,7 @@ class StipulationProcessor:
         """Check if stipulation requires scope parameters."""
         try:
             stipulation = self.governor.get_stipulation_for_contract(category, version)
-            if stipulation and hasattr(stipulation, 'requires_scope_parameter'):
+            if stipulation and hasattr(stipulation, "requires_scope_parameter"):
                 # Safe: requires_scope_parameter is always a bool on stipulation configs
                 return cast(bool, stipulation.requires_scope_parameter)
             return False
@@ -128,14 +133,19 @@ class StipulationProcessor:
         """Get stipulation exposure policy."""
         try:
             stipulation = self.governor.get_stipulation_for_contract(category, version)
-            if stipulation and hasattr(stipulation, 'exposure_policy'):
-                return stipulation.exposure_policy.value if hasattr(stipulation.exposure_policy, 'value') else str(stipulation.exposure_policy)
+            if stipulation and hasattr(stipulation, "exposure_policy"):
+                return (
+                    stipulation.exposure_policy.value
+                    if hasattr(stipulation.exposure_policy, "value")
+                    else str(stipulation.exposure_policy)
+                )
             return None
         except Exception:
             return None
 
-    def register_multi_tenant_stipulation(self, category: str, version: str,
-                                         stipulation: MultiTenantStipulation) -> None:
+    def register_multi_tenant_stipulation(
+        self, category: str, version: str, stipulation: MultiTenantStipulation
+    ) -> None:
         """Register a multi-tenant stipulation with template support."""
         key = f"{category}:{version}"
         self._multi_tenant_stipulations[key] = stipulation

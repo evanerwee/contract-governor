@@ -19,6 +19,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 class MetricType(Enum):
     """Types of metrics collected by the monitoring system."""
+
     COUNTER = "counter"
     GAUGE = "gauge"
     HISTOGRAM = "histogram"
@@ -27,6 +28,7 @@ class MetricType(Enum):
 
 class OperationType(Enum):
     """Types of operations monitored by the system."""
+
     VALIDATION = "validation"
     TRANSFORMATION = "transformation"
     CONTRACT_EXPOSURE = "contract_exposure"
@@ -38,6 +40,7 @@ class OperationType(Enum):
 @dataclass
 class MetricPoint:
     """A single metric data point."""
+
     name: str
     value: float
     metric_type: MetricType
@@ -51,13 +54,14 @@ class MetricPoint:
             "value": self.value,
             "type": self.metric_type.value,
             "timestamp": self.timestamp.isoformat(),
-            "labels": self.labels
+            "labels": self.labels,
         }
 
 
 @dataclass
 class PerformanceMetrics:
     """Performance metrics for an operation."""
+
     operation_type: OperationType
     duration_seconds: float
     success: bool
@@ -77,13 +81,14 @@ class PerformanceMetrics:
             "contract_category": self.contract_category,
             "api_major_version": self.api_major_version,
             "stipulation_id": self.stipulation_id,
-            "timestamp": self.timestamp.isoformat()
+            "timestamp": self.timestamp.isoformat(),
         }
 
 
 @dataclass
 class AuditEvent:
     """Audit event for contract exposure and access."""
+
     event_type: str
     contract_category: str
     api_major_version: str
@@ -113,7 +118,7 @@ class AuditEvent:
             "stipulation_id": self.stipulation_id,
             "error_code": self.error_code,
             "metadata": self.metadata,
-            "timestamp": self.timestamp.isoformat()
+            "timestamp": self.timestamp.isoformat(),
         }
 
 
@@ -143,10 +148,7 @@ class MetricsCollector:
             self._counters[key] += value
 
             metric = MetricPoint(
-                name=name,
-                value=self._counters[key],
-                metric_type=MetricType.COUNTER,
-                labels=labels or {}
+                name=name, value=self._counters[key], metric_type=MetricType.COUNTER, labels=labels or {}
             )
             self._metrics.append(metric)
 
@@ -156,12 +158,7 @@ class MetricsCollector:
             key = self._make_key(name, labels)
             self._gauges[key] = value
 
-            metric = MetricPoint(
-                name=name,
-                value=value,
-                metric_type=MetricType.GAUGE,
-                labels=labels or {}
-            )
+            metric = MetricPoint(name=name, value=value, metric_type=MetricType.GAUGE, labels=labels or {})
             self._metrics.append(metric)
 
     def record_histogram(self, name: str, value: float, labels: Optional[Dict[str, str]] = None) -> None:
@@ -174,23 +171,13 @@ class MetricsCollector:
             if len(self._histograms[key]) > 1000:
                 self._histograms[key] = self._histograms[key][-1000:]
 
-            metric = MetricPoint(
-                name=name,
-                value=value,
-                metric_type=MetricType.HISTOGRAM,
-                labels=labels or {}
-            )
+            metric = MetricPoint(name=name, value=value, metric_type=MetricType.HISTOGRAM, labels=labels or {})
             self._metrics.append(metric)
 
     def record_timer(self, name: str, duration: float, labels: Optional[Dict[str, str]] = None) -> None:
         """Record a timer metric (duration in seconds)."""
         with self._lock:
-            metric = MetricPoint(
-                name=name,
-                value=duration,
-                metric_type=MetricType.TIMER,
-                labels=labels or {}
-            )
+            metric = MetricPoint(name=name, value=duration, metric_type=MetricType.TIMER, labels=labels or {})
             self._metrics.append(metric)
 
             # Also record as histogram for percentile calculations
@@ -228,7 +215,7 @@ class MetricsCollector:
                 "p50": sorted_values[int(count * 0.5)],
                 "p90": sorted_values[int(count * 0.9)],
                 "p95": sorted_values[int(count * 0.95)],
-                "p99": sorted_values[int(count * 0.99)]
+                "p99": sorted_values[int(count * 0.99)],
             }
 
     def get_recent_metrics(self, limit: int = 100) -> List[Dict[str, Any]]:
@@ -244,11 +231,12 @@ class MetricsCollector:
                 "counters": dict(self._counters),
                 "gauges": dict(self._gauges),
                 "histogram_stats": {
-                    name: self.get_histogram_stats(name.split("|")[0],
-                                                 self._parse_labels(name.split("|")[1]) if "|" in name else None)
+                    name: self.get_histogram_stats(
+                        name.split("|")[0], self._parse_labels(name.split("|")[1]) if "|" in name else None
+                    )
                     for name in self._histograms.keys()
                 },
-                "total_metrics_collected": len(self._metrics)
+                "total_metrics_collected": len(self._metrics),
             }
 
     def _make_key(self, name: str, labels: Optional[Dict[str, str]]) -> str:
@@ -297,7 +285,7 @@ class AuditLogger:
         user_id: Optional[str] = None,
         request_id: Optional[str] = None,
         error_code: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Log contract exposure event."""
         event = AuditEvent(
@@ -310,7 +298,7 @@ class AuditLogger:
             request_id=request_id,
             stipulation_id=stipulation_id,
             error_code=error_code,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         self._log_event(event)
@@ -326,7 +314,7 @@ class AuditLogger:
         user_agent: Optional[str] = None,
         request_id: Optional[str] = None,
         error_code: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Log contract access event."""
         event = AuditEvent(
@@ -340,7 +328,7 @@ class AuditLogger:
             user_agent=user_agent,
             request_id=request_id,
             error_code=error_code,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         self._log_event(event)
@@ -355,7 +343,7 @@ class AuditLogger:
         user_agent: Optional[str] = None,
         request_id: Optional[str] = None,
         filters: Optional[Dict[str, Any]] = None,
-        error_code: Optional[str] = None
+        error_code: Optional[str] = None,
     ) -> None:
         """Log catalog access event."""
         event = AuditEvent(
@@ -369,10 +357,7 @@ class AuditLogger:
             user_agent=user_agent,
             request_id=request_id,
             error_code=error_code,
-            metadata={
-                "contract_count": contract_count,
-                "filters": filters or {}
-            }
+            metadata={"contract_count": contract_count, "filters": filters or {}},
         )
 
         self._log_event(event)
@@ -393,7 +378,7 @@ class AuditLogger:
                 f"AUDIT: {event.event_type} - {event.operation} - "
                 f"{event.contract_category}:{event.api_major_version} - "
                 f"{'SUCCESS' if event.success else 'FAILED'}",
-                extra=event.to_dict()
+                extra=event.to_dict(),
             )
 
 
@@ -417,7 +402,7 @@ class PerformanceMonitor:
         operation_type: OperationType,
         contract_category: Optional[str] = None,
         api_major_version: Optional[str] = None,
-        stipulation_id: Optional[str] = None
+        stipulation_id: Optional[str] = None,
     ):
         """
         Context manager for monitoring operation performance.
@@ -435,7 +420,7 @@ class PerformanceMonitor:
         labels = {
             "operation": operation_type.value,
             "category": contract_category or "unknown",
-            "api_major": api_major_version or "unknown"
+            "api_major": api_major_version or "unknown",
         }
 
         if stipulation_id:
@@ -449,7 +434,7 @@ class PerformanceMonitor:
 
         except Exception as e:
             success = False
-            error_code = getattr(e, 'error_code', type(e).__name__)
+            error_code = getattr(e, "error_code", type(e).__name__)
 
             # Increment error counter
             error_labels = labels.copy()
@@ -475,7 +460,7 @@ class PerformanceMonitor:
                 error_code=error_code,
                 contract_category=contract_category,
                 api_major_version=api_major_version,
-                stipulation_id=stipulation_id
+                stipulation_id=stipulation_id,
             )
 
     def record_validation_metrics(
@@ -486,14 +471,10 @@ class PerformanceMonitor:
         validation_duration: float,
         validation_errors: int,
         validation_warnings: int,
-        success: bool
+        success: bool,
     ) -> None:
         """Record detailed validation metrics."""
-        labels = {
-            "category": contract_category,
-            "api_major": api_major_version,
-            "stipulation": stipulation_id
-        }
+        labels = {"category": contract_category, "api_major": api_major_version, "stipulation": stipulation_id}
 
         self.metrics.record_timer("validation_duration_seconds", validation_duration, labels)
         self.metrics.record_histogram("validation_errors_count", validation_errors, labels)
@@ -511,14 +492,10 @@ class PerformanceMonitor:
         stipulation_id: str,
         transformation_duration: float,
         transformers_applied: int,
-        success: bool
+        success: bool,
     ) -> None:
         """Record detailed transformation metrics."""
-        labels = {
-            "category": contract_category,
-            "api_major": api_major_version,
-            "stipulation": stipulation_id
-        }
+        labels = {"category": contract_category, "api_major": api_major_version, "stipulation": stipulation_id}
 
         self.metrics.record_timer("transformation_duration_seconds", transformation_duration, labels)
         self.metrics.record_histogram("transformers_applied_count", transformers_applied, labels)
@@ -529,10 +506,7 @@ class PerformanceMonitor:
             self.metrics.increment_counter("transformations_failed_total", labels=labels)
 
 
-def monitor_performance(
-    operation_type: OperationType,
-    metrics_collector: Optional[MetricsCollector] = None
-):
+def monitor_performance(operation_type: OperationType, metrics_collector: Optional[MetricsCollector] = None):
     """
     Decorator for monitoring function performance.
 
@@ -540,8 +514,10 @@ def monitor_performance(
         operation_type: Type of operation being monitored
         metrics_collector: Optional metrics collector (uses global if not provided)
     """
+
     def decorator(func: Callable) -> Callable:
         """Wrap a function with performance monitoring instrumentation."""
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             """Execute the wrapped function while recording performance metrics."""
@@ -550,19 +526,20 @@ def monitor_performance(
             monitor = PerformanceMonitor(collector)
 
             # Extract context from function arguments if available
-            contract_category = kwargs.get('category') or kwargs.get('contract_category')
-            api_major_version = kwargs.get('api_major') or kwargs.get('api_major_version')
-            stipulation_id = kwargs.get('stipulation_id')
+            contract_category = kwargs.get("category") or kwargs.get("contract_category")
+            api_major_version = kwargs.get("api_major") or kwargs.get("api_major_version")
+            stipulation_id = kwargs.get("stipulation_id")
 
             with monitor.monitor_operation(
                 operation_type=operation_type,
                 contract_category=contract_category,
                 api_major_version=api_major_version,
-                stipulation_id=stipulation_id
+                stipulation_id=stipulation_id,
             ):
                 return func(*args, **kwargs)
 
         return wrapper
+
     return decorator
 
 
@@ -573,8 +550,7 @@ _global_performance_monitor: Optional[PerformanceMonitor] = None
 
 
 def initialize_monitoring(
-    metrics_collector: Optional[MetricsCollector] = None,
-    audit_logger: Optional[AuditLogger] = None
+    metrics_collector: Optional[MetricsCollector] = None, audit_logger: Optional[AuditLogger] = None
 ) -> None:
     """Initialize global monitoring instances."""
     global _global_metrics_collector, _global_audit_logger, _global_performance_monitor

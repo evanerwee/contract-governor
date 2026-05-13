@@ -13,11 +13,12 @@ from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union, cast
 
 class Scope(Enum):
     """Dependency scope enumeration."""
+
     SINGLETON = "singleton"
     TRANSIENT = "transient"
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class DIContainer:
@@ -40,7 +41,7 @@ class DIContainer:
         interface: Type[T],
         implementation: Union[Type[T], Callable[[], T]],
         scope: Scope = Scope.SINGLETON,
-        name: Optional[str] = None
+        name: Optional[str] = None,
     ) -> None:
         """
         Register a service with the container.
@@ -55,10 +56,10 @@ class DIContainer:
 
         with self._lock:
             self._services[service_key] = {
-                'interface': interface,
-                'implementation': implementation,
-                'scope': scope,
-                'name': name
+                "interface": interface,
+                "implementation": implementation,
+                "scope": scope,
+                "name": name,
             }
 
     def register_instance(self, interface: Type[T], instance: T, name: Optional[str] = None) -> None:
@@ -74,10 +75,10 @@ class DIContainer:
 
         with self._lock:
             self._services[service_key] = {
-                'interface': interface,
-                'implementation': lambda: instance,
-                'scope': Scope.SINGLETON,
-                'name': name
+                "interface": interface,
+                "implementation": lambda: instance,
+                "scope": Scope.SINGLETON,
+                "name": name,
             }
             self._instances[service_key] = instance
 
@@ -103,7 +104,7 @@ class DIContainer:
         service_config = self._services[service_key]
 
         # Return existing singleton instance if available
-        if service_config['scope'] == Scope.SINGLETON and service_key in self._instances:
+        if service_config["scope"] == Scope.SINGLETON and service_key in self._instances:
             # Safe cast: _instances stores objects registered as Type[T], so the
             # value at this key was originally provided as an instance of T.
             return cast(T, self._instances[service_key])
@@ -112,7 +113,7 @@ class DIContainer:
         instance = self._create_instance(service_config)
 
         # Store singleton instance
-        if service_config['scope'] == Scope.SINGLETON:
+        if service_config["scope"] == Scope.SINGLETON:
             with self._lock:
                 self._instances[service_key] = instance
 
@@ -155,7 +156,7 @@ class DIContainer:
         Returns:
             New instance of the service
         """
-        implementation = service_config['implementation']
+        implementation = service_config["implementation"]
 
         # If implementation is a callable (factory function)
         if callable(implementation) and not inspect.isclass(implementation):
@@ -182,7 +183,7 @@ class DIContainer:
         parameters = signature.parameters
 
         # Skip 'self' parameter
-        param_names = [name for name in parameters.keys() if name != 'self']
+        param_names = [name for name in parameters.keys() if name != "self"]
 
         # Resolve dependencies
         kwargs = {}

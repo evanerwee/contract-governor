@@ -25,5 +25,5 @@ __all__ = [
     "inject",
     "auto_wire",
     "DISetup",
-    "create_default_setup"
+    "create_default_setup",
 ]

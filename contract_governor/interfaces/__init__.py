@@ -43,5 +43,5 @@ __all__ = [
     # Serving concerns
     "CatalogProvider",
     "ContractProvider",
-    "HealthProvider"
+    "HealthProvider",
 ]

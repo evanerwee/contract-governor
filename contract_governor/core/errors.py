@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional
 
 class ErrorSeverity(Enum):
     """Error severity levels for classification and monitoring."""
+
     CRITICAL = "critical"
     ERROR = "error"
     WARNING = "warning"
@@ -23,6 +24,7 @@ class ErrorSeverity(Enum):
 
 class ErrorCategory(Enum):
     """Error categories for monitoring and alerting."""
+
     VALIDATION = "validation"
     TRANSFORMATION = "transformation"
     CONFIGURATION = "configuration"
@@ -38,6 +40,7 @@ class ErrorContext:
     """
     Rich context information for errors to support debugging and monitoring.
     """
+
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     request_id: Optional[str] = None
     user_id: Optional[str] = None
@@ -59,7 +62,7 @@ class ErrorContext:
             "api_major_version": self.api_major_version,
             "stipulation_id": self.stipulation_id,
             "operation": self.operation,
-            "additional_data": self.additional_data
+            "additional_data": self.additional_data,
         }
 
 
@@ -79,7 +82,7 @@ class StipulationError(Exception):
         severity: ErrorSeverity = ErrorSeverity.ERROR,
         context: Optional[ErrorContext] = None,
         cause: Optional[Exception] = None,
-        details: Optional[Dict[str, Any]] = None
+        details: Optional[Dict[str, Any]] = None,
     ):
         """Initialize stipulation error with message, code, category, severity, and optional context."""
         super().__init__(message)
@@ -102,7 +105,7 @@ class StipulationError(Exception):
             "context": self.context.to_dict(),
             "details": self.details,
             "cause": str(self.cause) if self.cause else None,
-            "traceback": self.traceback_info
+            "traceback": self.traceback_info,
         }
 
     def get_http_status_code(self) -> int:
@@ -134,7 +137,7 @@ class ValidationError(StipulationError):
         field_path: Optional[str] = None,
         stipulation_id: Optional[str] = None,
         validation_errors: Optional[List[Dict[str, Any]]] = None,
-        context: Optional[ErrorContext] = None
+        context: Optional[ErrorContext] = None,
     ):
         """Initialize validation error with field path, stipulation ID, and validation details."""
         super().__init__(
@@ -142,18 +145,16 @@ class ValidationError(StipulationError):
             error_code=error_code,
             category=ErrorCategory.VALIDATION,
             severity=ErrorSeverity.ERROR,
-            context=context
+            context=context,
         )
         self.field_path = field_path
         self.stipulation_id = stipulation_id
         self.validation_errors = validation_errors or []
 
         # Add validation-specific details
-        self.details.update({
-            "field_path": field_path,
-            "stipulation_id": stipulation_id,
-            "validation_errors": self.validation_errors
-        })
+        self.details.update(
+            {"field_path": field_path, "stipulation_id": stipulation_id, "validation_errors": self.validation_errors}
+        )
 
     def get_http_status_code(self) -> int:
         """Validation errors are always 400 Bad Request."""
@@ -172,7 +173,7 @@ class TransformationError(StipulationError):
         transformation_stage: Optional[str] = None,
         original_contract: Optional[Dict[str, Any]] = None,
         context: Optional[ErrorContext] = None,
-        cause: Optional[Exception] = None
+        cause: Optional[Exception] = None,
     ):
         """Initialize transformation error with stage and original contract details."""
         super().__init__(
@@ -181,16 +182,15 @@ class TransformationError(StipulationError):
             category=ErrorCategory.TRANSFORMATION,
             severity=ErrorSeverity.ERROR,
             context=context,
-            cause=cause
+            cause=cause,
         )
         self.transformation_stage = transformation_stage
         self.original_contract = original_contract
 
         # Add transformation-specific details
-        self.details.update({
-            "transformation_stage": transformation_stage,
-            "has_original_contract": original_contract is not None
-        })
+        self.details.update(
+            {"transformation_stage": transformation_stage, "has_original_contract": original_contract is not None}
+        )
 
     def get_http_status_code(self) -> int:
         """Transformation errors are typically 422 Unprocessable Entity."""
@@ -209,7 +209,7 @@ class ConfigurationError(StipulationError):
         config_source: Optional[str] = None,
         config_key: Optional[str] = None,
         context: Optional[ErrorContext] = None,
-        cause: Optional[Exception] = None
+        cause: Optional[Exception] = None,
     ):
         """Initialize configuration error with source and key details."""
         super().__init__(
@@ -218,16 +218,13 @@ class ConfigurationError(StipulationError):
             category=ErrorCategory.CONFIGURATION,
             severity=ErrorSeverity.ERROR,
             context=context,
-            cause=cause
+            cause=cause,
         )
         self.config_source = config_source
         self.config_key = config_key
 
         # Add configuration-specific details
-        self.details.update({
-            "config_source": config_source,
-            "config_key": config_key
-        })
+        self.details.update({"config_source": config_source, "config_key": config_key})
 
     def get_http_status_code(self) -> int:
         """Configuration errors are typically 500 Internal Server Error."""
@@ -246,7 +243,7 @@ class RegistryError(StipulationError):
         operation: Optional[str] = None,
         contract_key: Optional[str] = None,
         context: Optional[ErrorContext] = None,
-        cause: Optional[Exception] = None
+        cause: Optional[Exception] = None,
     ):
         """Initialize registry error with operation type and contract key."""
         super().__init__(
@@ -255,16 +252,13 @@ class RegistryError(StipulationError):
             category=ErrorCategory.REGISTRY,
             severity=ErrorSeverity.ERROR,
             context=context,
-            cause=cause
+            cause=cause,
         )
         self.operation = operation
         self.contract_key = contract_key
 
         # Add registry-specific details
-        self.details.update({
-            "operation": operation,
-            "contract_key": contract_key
-        })
+        self.details.update({"operation": operation, "contract_key": contract_key})
 
     def get_http_status_code(self) -> int:
         """Registry errors map to different HTTP codes based on operation."""
@@ -286,7 +280,7 @@ class ContractNotFoundError(RegistryError):
         category: str,
         api_major_version: str,
         contract_type: str = "exposed",
-        context: Optional[ErrorContext] = None
+        context: Optional[ErrorContext] = None,
     ):
         """Initialize contract-not-found error with category, version, and contract type."""
         message = f"{contract_type.title()} contract not found: {category}:{api_major_version}"
@@ -295,7 +289,7 @@ class ContractNotFoundError(RegistryError):
             error_code="CONTRACT_NOT_FOUND",
             operation="get",
             contract_key=f"{category}:{api_major_version}",
-            context=context
+            context=context,
         )
         self.category_name = category
         self.api_major_version = api_major_version
@@ -311,11 +305,7 @@ class StipulationViolationError(ValidationError):
     Raised when a contract violates stipulation requirements.
     """
 
-    def __init__(
-        self,
-        validation_result,  # ValidationResult from models
-        context: Optional[ErrorContext] = None
-    ):
+    def __init__(self, validation_result, context: Optional[ErrorContext] = None):  # ValidationResult from models
         """Initialize stipulation violation error from a validation result."""
         # Extract error messages from validation result
         error_messages = [error.message for error in validation_result.errors]
@@ -329,7 +319,7 @@ class StipulationViolationError(ValidationError):
             error_code="STIPULATION_VIOLATION",
             stipulation_id=validation_result.applied_stipulation,
             validation_errors=validation_errors,
-            context=context
+            context=context,
         )
         self.validation_result = validation_result
 
@@ -341,12 +331,7 @@ class StipulationNotFoundError(StipulationError):
     Requirements: 3.3
     """
 
-    def __init__(
-        self,
-        category: str,
-        api_major_version: str,
-        context: Optional[ErrorContext] = None
-    ):
+    def __init__(self, category: str, api_major_version: str, context: Optional[ErrorContext] = None):
         """Initialize stipulation-not-found error with category and API version."""
         message = (
             f"No stipulation found for {category}:{api_major_version}. "
@@ -357,7 +342,7 @@ class StipulationNotFoundError(StipulationError):
             error_code="STIPULATION_NOT_FOUND",
             category=ErrorCategory.CONFIGURATION,
             severity=ErrorSeverity.ERROR,
-            context=context
+            context=context,
         )
         self.category_name = category
         self.api_major_version = api_major_version
@@ -382,7 +367,7 @@ class StipulationParseError(StipulationError):
         parse_error: Optional[str] = None,
         unknown_fields: Optional[List[str]] = None,
         context: Optional[ErrorContext] = None,
-        cause: Optional[Exception] = None
+        cause: Optional[Exception] = None,
     ):
         """Initialize stipulation parse error with source path and parse failure details."""
         if parse_error:
@@ -409,7 +394,7 @@ class StipulationParseError(StipulationError):
             category=ErrorCategory.CONFIGURATION,
             severity=ErrorSeverity.ERROR,
             context=context,
-            cause=cause
+            cause=cause,
         )
         self.category_name = category
         self.api_major_version = api_major_version
@@ -418,11 +403,9 @@ class StipulationParseError(StipulationError):
         self.unknown_fields = unknown_fields or []
 
         # Add details for debugging
-        self.details.update({
-            "source_path": source_path,
-            "parse_error": parse_error,
-            "unknown_fields": self.unknown_fields
-        })
+        self.details.update(
+            {"source_path": source_path, "parse_error": parse_error, "unknown_fields": self.unknown_fields}
+        )
 
     def get_http_status_code(self) -> int:
         """Parse errors are 422 Unprocessable Entity."""
@@ -438,7 +421,7 @@ class AuthenticationError(StipulationError):
         self,
         message: str = "Authentication failed",
         error_code: str = "AUTHENTICATION_FAILED",
-        context: Optional[ErrorContext] = None
+        context: Optional[ErrorContext] = None,
     ):
         """Initialize authentication error with message and error code."""
         super().__init__(
@@ -446,7 +429,7 @@ class AuthenticationError(StipulationError):
             error_code=error_code,
             category=ErrorCategory.AUTHENTICATION,
             severity=ErrorSeverity.ERROR,
-            context=context
+            context=context,
         )
 
     def get_http_status_code(self) -> int:
@@ -464,7 +447,7 @@ class AuthorizationError(StipulationError):
         message: str = "Access denied",
         error_code: str = "ACCESS_DENIED",
         required_permission: Optional[str] = None,
-        context: Optional[ErrorContext] = None
+        context: Optional[ErrorContext] = None,
     ):
         """Initialize authorization error with message and optional required permission."""
         super().__init__(
@@ -472,7 +455,7 @@ class AuthorizationError(StipulationError):
             error_code=error_code,
             category=ErrorCategory.AUTHORIZATION,
             severity=ErrorSeverity.ERROR,
-            context=context
+            context=context,
         )
         self.required_permission = required_permission
 
@@ -496,7 +479,7 @@ class NetworkError(StipulationError):
         endpoint: Optional[str] = None,
         status_code: Optional[int] = None,
         context: Optional[ErrorContext] = None,
-        cause: Optional[Exception] = None
+        cause: Optional[Exception] = None,
     ):
         """Initialize network error with endpoint and status code details."""
         super().__init__(
@@ -505,16 +488,13 @@ class NetworkError(StipulationError):
             category=ErrorCategory.NETWORK,
             severity=ErrorSeverity.ERROR,
             context=context,
-            cause=cause
+            cause=cause,
         )
         self.endpoint = endpoint
         self.status_code = status_code
 
         # Add network-specific details
-        self.details.update({
-            "endpoint": endpoint,
-            "status_code": status_code
-        })
+        self.details.update({"endpoint": endpoint, "status_code": status_code})
 
     def get_http_status_code(self) -> int:
         """Network errors typically map to 502 Bad Gateway."""
@@ -571,7 +551,7 @@ def create_error_context(
     api_major_version: Optional[str] = None,
     stipulation_id: Optional[str] = None,
     operation: Optional[str] = None,
-    **additional_data
+    **additional_data,
 ) -> ErrorContext:
     """
     Convenience function to create error context with common fields.
@@ -584,5 +564,5 @@ def create_error_context(
         api_major_version=api_major_version,
         stipulation_id=stipulation_id,
         operation=operation,
-        additional_data=additional_data
+        additional_data=additional_data,
     )
