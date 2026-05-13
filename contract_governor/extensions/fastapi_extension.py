@@ -1076,7 +1076,8 @@ class ContractGovernorFastAPIExtension:
                         logger.info(
                             f"   ✅ Matched by operationId: {operation_id} -> {snake_case_name}() on {route.path}"
                         )
-                        return route.endpoint
+                        endpoint = route.endpoint
+                        return cast("Callable[..., Any] | None", endpoint)
 
             # Fall back to path matching
             for route in router.routes:
@@ -1094,7 +1095,8 @@ class ContractGovernorFastAPIExtension:
                     # Match HTTP method
                     if route.methods and method.upper() in route.methods:
                         logger.info(f"✅ Matched by path: {method.upper()} {contract_path} -> {route_path}")
-                        return route.endpoint
+                        endpoint = route.endpoint
+                        return cast("Callable[..., Any] | None", endpoint)
                     else:
                         logger.debug(
                             f"   Path matched but method mismatch: need {method.upper()}, have {list(route.methods or set())}"

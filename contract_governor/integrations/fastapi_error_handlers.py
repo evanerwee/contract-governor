@@ -251,11 +251,11 @@ class FastAPIErrorHandler:
         """
         forwarded_for = request.headers.get("x-forwarded-for")
         if forwarded_for:
-            return forwarded_for.split(",")[0].strip()
+            return str(forwarded_for).split(",")[0].strip()
 
         real_ip = request.headers.get("x-real-ip")
         if real_ip:
-            return real_ip
+            return str(real_ip)
 
         client = getattr(request, "client", None)
         return getattr(client, "host", None) if client else None
