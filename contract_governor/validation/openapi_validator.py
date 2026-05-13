@@ -291,7 +291,7 @@ class OpenAPIValidator:
 
             # Create Spec object - this validates the spec structure
             try:
-                Spec.from_dict(spec)
+                Spec.from_dict(spec)  # type: ignore[arg-type]
                 logger.debug(f"✅ OpenAPI spec validated successfully: {file_path}")
             except OpenAPIError as e:
                 errors.append(
