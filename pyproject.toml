@@ -1,0 +1,147 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "contract-governor"
+dynamic = ["version"]
+description = "Governance framework for OpenAPI contracts with validation, transformation, and controlled exposure"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "Evan Erwee", email = "evan@erwee.com" }]
+keywords = [
+    "openapi",
+    "api-gateway",
+    "governance",
+    "multi-tenant",
+    "contract-management",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "pyyaml>=6.0",
+    "httpx>=0.25.0",
+    "pydantic>=2.0.0",
+    "python-multipart>=0.0.6",
+    "semver>=3.0.0",
+]
+
+[project.optional-dependencies]
+server = ["fastapi>=0.133.0", "uvicorn[standard]>=0.30.0"]
+validation = ["openapi-core>=0.19.0,<0.23.0"]
+aws = ["boto3>=1.28.0", "botocore>=1.31.0"]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "hypothesis>=6.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.5.0",
+    "pip-audit>=2.6.0",
+    "interrogate>=1.5.0",
+    "sphinx-rtd-theme>=2.0.0",
+    "myst-parser>=2.0.0",
+    "twine>=5.0.0",
+    "build>=1.0.0",
+]
+all = ["contract-governor[server,validation,aws,dev]"]
+
+[project.urls]
+Homepage = "https://github.com/evanerwee/contract-governor"
+Repository = "https://github.com/evanerwee/contract-governor"
+Documentation = "https://github.com/evanerwee/contract-governor/blob/main/README.md"
+Issues = "https://github.com/evanerwee/contract-governor/issues"
+
+
+[tool.hatch.version]
+path = "contract_governor/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["contract_governor"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "_archived/",
+    "Example/",
+    "scripts/",
+    "tools/",
+    ".hypothesis/",
+    ".coverage",
+    "dist/",
+    "config/",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --strict-markers --cov=contract_governor --cov-report=term-missing"
+
+[tool.black]
+line-length = 120
+target-version = ["py311"]
+include = '\.pyi?$'
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501", "F401", "F402", "F821", "E741"]
+
+[tool.ruff.lint.per-file-ignores]
+"contract_governor/integrations/__init__.py" = ["F401"]
+"contract_governor/integrations/framework_registry.py" = ["F401"]
+"contract_governor/validation/openapi_validator.py" = ["F401", "F841"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = [
+    "openapi_core.*",
+    "uvicorn.*",
+    "semver.*",
+    "httpx.*",
+    "yaml.*",
+    "boto3.*",
+    "botocore.*",
+    "starlette.*",
+    "fastapi.*",
+    "flask.*",
+    "django.*",
+    "jsonschema.*",
+]
+ignore_missing_imports = true
+
+[tool.interrogate]
+ignore-init-method = true
+ignore-init-module = false
+ignore-magic = true
+ignore-semiprivate = false
+ignore-private = true
+ignore-property-decorators = true
+ignore-module = false
+ignore-nested-functions = true
+fail-under = 95
+exclude = ["tests", "_archived", "setup.py"]
+verbose = 1
+
+[tool.pip-audit]
+desc = "on"
+progress-spinner = "off"
+output = "columns"

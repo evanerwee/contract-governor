@@ -1,0 +1,56 @@
+template_id: "evidence-query-multi-tenant"
+base_contract:
+  openapi: "3.0.3"
+  info:
+    title: "Evidence Query API - {tenant_id}"
+    version: "2.0.0"
+    description: "Multi-tenant evidence query API for {tenant_id}"
+  paths:
+    "/evidence/{tenant_id}/query":
+      post:
+        summary: "Query evidence for tenant"
+        parameters:
+          - name: tenant_id
+            in: path
+            required: true
+            schema:
+              type: string
+        requestBody:
+          content:
+            application/json:
+              schema:
+                type: object
+        responses:
+          "200":
+            description: "Query results"
+
+variables:
+  tenant_id:
+    source: "discovery"
+    values: []  # Will be populated by discovery
+    required: true
+    pattern: "^[a-z0-9-]+$"
+  
+  database_id:
+    source: "discovery" 
+    values: []  # Will be populated by discovery
+    required: true
+
+path_template: "/api/v2/tenants/{tenant_id}/evidence"
+backend_template: "https://evidence-{tenant_id}-{database_id}.internal.com"
+
+expansion_config:
+  max_instances: 50
+  variable_discovery_enabled: true
+  cache_instances: true
+  validate_backends: false
+
+discovery_sources:
+  - source_type: "s3"
+    connection_config:
+      bucket: "ai4triage-control-plane-config"
+      prefix: "data-planes/"
+    variable_mapping:
+      tenant_id: "tenant_name"
+      database_id: "neptune_cluster_id"
+    refresh_interval: 300

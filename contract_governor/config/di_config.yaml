@@ -1,0 +1,37 @@
+# Example dependency injection configuration
+# This file demonstrates how services can be configured for dependency injection
+
+services:
+  # Configuration sources
+  local_file_config:
+    interface: "contract_stipulations.interfaces.configuration_source.ConfigurationSource"
+    implementation: "contract_stipulations.config.sources.LocalFileConfigSource"
+    scope: "singleton"
+    name: "local_file"
+    tags: ["config", "local"]
+    metadata:
+      description: "Local file-based configuration source"
+      priority: 1
+
+  # Validators
+  openapi_version_validator:
+    interface: "contract_stipulations.interfaces.validator.Validator"
+    implementation: "contract_stipulations.validation.validators.OpenAPIVersionValidator"
+    scope: "singleton"
+    tags: ["validator", "structure"]
+
+  # Transformers  
+  url_rewriter:
+    interface: "contract_stipulations.interfaces.transformer.Transformer"
+    implementation: "contract_stipulations.transformation.transformers.URLRewriter"
+    scope: "singleton"
+    tags: ["transformer", "url"]
+
+# Auto-discover classes marked with @injectable decorator
+auto_discover: true
+
+# Logging configuration for DI operations
+logging:
+  level: "INFO"
+  log_service_resolution: true
+  log_service_creation: true

@@ -1,0 +1,65 @@
+# Central application configuration for contract-governor
+
+# Configuration source settings
+config_source:
+  # Type: local_file, s3, or dynamodb
+  type: local_file
+  
+  # Local file configuration
+  local_file:
+    directory: config/stipulations
+  
+  # S3 configuration (used when type: s3)
+  s3:
+    bucket_name: triage-control-plane-contracts-188967239867-us-east-1
+    prefix: stipulations/
+    region: us-east-1
+    control_plane_version: v1.0.0  # Used to determine major version path
+  
+  # DynamoDB configuration (used when type: dynamodb)
+  dynamodb:
+    table_name: contract-stipulations
+    region: us-east-1
+
+# Contract loading settings
+contracts:
+  # Where to load contracts from
+  source_type: local_file  # local_file or s3
+  
+  # Local contracts directory
+  local_directory: contracts/
+  
+  # S3 contracts configuration
+  s3:
+    bucket_name: triage-control-plane-contracts-188967239867-us-east-1
+    prefix: contracts/
+    region: us-east-1
+    control_plane_version: v1.0.0
+
+# Validation settings
+validation:
+  enforce_version_alignment: true
+  require_openapi_major: "3."
+  fail_on_missing_stipulation: false  # Set to true in production
+
+# Transformation settings
+transformation:
+  gateway_base_url: https://api.example.com
+  inject_metadata: true
+  extension_namespace: x-governance
+
+# Catalog settings
+catalog:
+  default_visible: true
+  enable_documentation: true
+  documentation_renderer: scalar
+
+# AWS settings
+aws:
+  profile: master
+  region: us-east-1
+
+# Logging
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

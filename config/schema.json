@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Stipulation Configuration Schema",
+  "description": "JSON Schema for validating stipulation configurations",
+  "type": "object",
+  "required": [
+    "stipulation_id",
+    "stipulation_version",
+    "exposure_policy",
+    "proxy_prefix_format",
+    "requires_scope_parameter",
+    "forbid_methods",
+    "required_fields",
+    "require_openapi_major",
+    "inject_metadata",
+    "metadata_block",
+    "catalog_default_visible",
+    "extension_namespace",
+    "enforce_version_alignment"
+  ],
+  "properties": {
+    "stipulation_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+:[a-z0-9]+$",
+      "description": "Unique identifier for the stipulation in format 'category:version'"
+    },
+    "stipulation_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of the stipulation policy"
+    },
+    "exposure_policy": {
+      "type": "string",
+      "enum": ["tenant-scoped", "global-control-plane", "private"],
+      "description": "Policy for how the API can be exposed"
+    },
+    "proxy_prefix_format": {
+      "type": "string",
+      "minLength": 1,
+      "description": "URL template for proxy prefix with placeholders"
+    },
+    "requires_scope_parameter": {
+      "type": "boolean",
+      "description": "Whether the API requires scope parameters in the proxy URL"
+    },
+    "forbid_methods": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["get", "post", "put", "patch", "delete", "head", "options"]
+      },
+      "uniqueItems": true,
+      "description": "HTTP methods to strip from the contract"
+    },
+    "required_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "description": "Required fields that must be present in the OpenAPI contract"
+    },
+    "require_openapi_major": {
+      "type": "string",
+      "pattern": "^\\d+\\.$",
+      "description": "Required OpenAPI major version prefix (e.g., '3.')"
+    },
+    "inject_metadata": {
+      "type": "boolean",
+      "description": "Whether to inject metadata block into exposed contracts"
+    },
+    "metadata_block": {
+      "type": "object",
+      "description": "Metadata to inject into exposed contracts",
+      "additionalProperties": true
+    },
+    "catalog_default_visible": {
+      "type": "boolean",
+      "description": "Whether the contract is visible in public catalog by default"
+    },
+    "extension_namespace": {
+      "type": "string",
+      "pattern": "^x-[a-z0-9-]+$",
+      "description": "OpenAPI extension namespace for metadata injection"
+    },
+    "enforce_version_alignment": {
+      "type": "boolean",
+      "description": "Whether to enforce alignment between API major and contract versions"
+    }
+  },
+  "additionalProperties": false,
+  "if": {
+    "properties": {
+      "requires_scope_parameter": {
+        "const": true
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "proxy_prefix_format": {
+        "anyOf": [
+          {
+            "pattern": "\\{tenant_id\\}"
+          },
+          {
+            "pattern": "\\{scope_id\\}"
+          }
+        ]
+      }
+    }
+  }
+}

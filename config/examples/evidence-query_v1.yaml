@@ -1,0 +1,22 @@
+stipulation_id: "evidence-query:v1"
+stipulation_version: "1.0.0"
+exposure_policy: "tenant-scoped"
+proxy_prefix_format: "/tenant/{tenant_id}/evidence-query/v1"
+requires_scope_parameter: true
+forbid_methods: []
+required_fields:
+  - "openapi"
+  - "info.title"
+  - "info.version"
+  - "paths"
+require_openapi_major: "3."
+inject_metadata: true
+metadata_block:
+  audit_note: "All requests brokered by control-plane and logged"
+  proxy_enforced: true
+  platform: "Contract Stipulations System"
+  tenant_isolation: true
+  data_classification: "tenant-scoped"
+catalog_default_visible: true
+extension_namespace: "x-governance"
+enforce_version_alignment: true
